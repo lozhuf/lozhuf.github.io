@@ -33,10 +33,9 @@ const sizes = `(max-width: 640px) 100vw, ${Math.round(aspect * 440)}px`;
         decoding="async"
         onload="this.classList.add('is-loaded')"
       />
-      {data.status !== 'available' && <span class={`badge badge-${data.status}`}>{data.status}</span>}
     </div>
     <div class="tile-caption">
-      <span class="tile-title">{data.title}</span>
+      <span class="tile-dims">{data.dimensions}</span>
       <span class="tile-price">{priceLabel}</span>
     </div>
   </a>

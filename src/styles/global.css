@@ -10,13 +10,13 @@
   --accent: #1c1b19;
   --overlay-bg: var(--bg);
 
-  --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --font-display: 'Libre Caslon Text', Georgia, serif;
   --font-body: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   --page-pad: clamp(16px, 4vw, 56px);
-  --gap: clamp(12px, 1.6vw, 24px);
+  --gap: clamp(20px, 3vw, 48px);
   --row-h: 300px;
-  --radius: 2px;
+  --radius: 0;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
@@ -204,7 +204,7 @@ h3 {
 .grid {
   display: flex;
   flex-wrap: wrap;
-  gap: calc(var(--gap) * 1.5) var(--gap);
+  gap: calc(var(--gap) * 1.75) calc(var(--gap) * 3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -241,6 +241,9 @@ h3 {
   aspect-ratio: var(--ar);
   background: var(--surface) center / cover no-repeat;
   border-radius: var(--radius);
+  box-shadow:
+    0 2px 4px rgb(28 27 25 / 0.14),
+    0 12px 24px -8px rgb(28 27 25 / 0.35);
   transition:
     transform 0.35s var(--ease),
     box-shadow 0.35s var(--ease);
@@ -261,8 +264,10 @@ h3 {
 @media (hover: hover) and (pointer: fine) {
   .tile-link:hover .tile-frame,
   .tile-link:focus-visible .tile-frame {
-    transform: scale(1.03);
-    box-shadow: 0 18px 40px -18px rgb(28 27 25 / 0.45);
+    transform: scale(1.015);
+    box-shadow:
+      0 4px 10px rgb(28 27 25 / 0.14),
+      0 24px 48px -16px rgb(28 27 25 / 0.5);
   }
 
   .tile-link:hover,
@@ -286,20 +291,16 @@ h3 {
   justify-content: space-between;
   gap: 12px;
   padding-top: 10px;
+  font-family: var(--font-display);
   font-size: 14px;
 }
 
-.tile-title {
-  font-family: var(--font-display);
-  font-size: 16px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.tile-dims {
+  color: var(--muted);
 }
 
 .tile-price {
   flex-shrink: 0;
-  color: var(--muted);
 }
 
 .grid-empty {
@@ -317,23 +318,6 @@ h3 {
   text-transform: uppercase;
   background: var(--bg);
   color: var(--ink);
-}
-
-.tile-frame .badge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-}
-
-.badge-sold::before {
-  content: '';
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: #b3261e;
-  vertical-align: 1px;
 }
 
 /* Smooth reflow when filtering (browsers with View Transitions). */
