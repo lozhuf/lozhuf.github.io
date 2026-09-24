@@ -1,1 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#1c1b19"/><text x="16" y="22" font-family="Georgia, serif" font-size="16" fill="#f7f5f0" text-anchor="middle">LH</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -7 234 234">
+  <style>path { fill: #000; } @media (prefers-color-scheme: dark) { path { fill: #f7f5f0; } }</style>
+  <path d="M103.434 220H0V0H59.0852V167.137H103.434V220Z"/>
+  <path d="M234 220H174.915V131.516H146.718V220H87.6331V0H146.718V77.7979H174.915V0H234V220Z"/>
+</svg>

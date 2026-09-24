@@ -7,8 +7,9 @@ export const site = {
   tagline: 'Original artwork',
   description: 'Original charcoal drawings and paintings by Laurie Hufford.',
 
-  /** Shown in the footer and used as a fallback if the form isn't set up. */
+  /** Linked from the envelope icon in the header, and for enquiries about sold pieces. */
   contactEmail: 'hello@lauriehufford.com',
+  instagram: 'https://www.instagram.com/lozhuf/',
 
   /**
    * Where "Request to buy" submissions are sent.
@@ -21,10 +22,6 @@ export const site = {
   /** Currency used when an artwork doesn't set its own. */
   defaultCurrency: 'GBP',
   locale: 'en-GB',
-
-  /** A short introduction shown in the About section at the bottom of the page. */
-  about:
-    'A short introduction to you and your work goes here. Edit it in src/site.config.ts.',
 };
 
 /**

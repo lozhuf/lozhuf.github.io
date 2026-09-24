@@ -54,7 +54,7 @@ To add a category, add a line to `mediums` in `src/site.config.ts`.
 
 ## Settings
 
-`src/site.config.ts` holds your name, the About text, your contact email, the currency and the purchase-form endpoint.
+`src/site.config.ts` holds your name, tagline, contact email, Instagram link, the currency and the purchase-form endpoint.
 
 ### Purchase requests
 
