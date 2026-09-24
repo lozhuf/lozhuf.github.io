@@ -88,29 +88,42 @@ h3 {
 /* ---------------------------------------------------------------------------
    Header and footer
 --------------------------------------------------------------------------- */
+/* Logo, filters and icons on one line; on narrow screens the filters get their own row. */
 .site-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 20px;
-  padding: clamp(16px, 2.5vw, 32px) var(--page-pad) clamp(16px, 2.5vw, 28px);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: 'logo filters nav';
+  align-items: end;
+  gap: 20px clamp(24px, 4vw, 56px);
+  padding: clamp(16px, 2.5vw, 32px) var(--page-pad) clamp(24px, 3.5vw, 44px);
+}
+
+@media (max-width: 760px) {
+  .site-header {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      'logo nav'
+      'filters filters';
+  }
 }
 
 .site-name {
+  grid-area: logo;
   display: block;
-  align-self: center;
 }
 
 .site-name img {
   width: auto;
-  height: clamp(40px, 5vw, 56px);
+  height: clamp(72px, 9vw, 120px);
 }
 
 .site-nav {
+  grid-area: nav;
   display: flex;
+  justify-self: end;
   gap: 4px;
-  margin-left: auto;
-  margin-right: -10px;
+  /* The icons sit inside 44px tap targets; pull them out so the drawn icons line up. */
+  margin: 0 -10px -12px 0;
 }
 
 .site-nav a {
@@ -153,10 +166,10 @@ h3 {
    Filters
 --------------------------------------------------------------------------- */
 .filters {
+  grid-area: filters;
   display: none;
   flex-wrap: wrap;
   gap: 8px;
-  padding-bottom: clamp(20px, 3vw, 32px);
 }
 
 .js .filters {
