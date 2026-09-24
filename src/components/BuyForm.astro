@@ -1,0 +1,39 @@
+---
+import type { Artwork } from '../lib/artworks';
+import { site } from '../site.config';
+
+interface Props {
+  artwork: Artwork;
+}
+
+const { artwork } = Astro.props;
+const { id, data } = artwork;
+const reserved = data.status === 'reserved';
+---
+
+<div class="buy">
+  <button type="button" class="btn buy-toggle" aria-expanded="false">
+    {reserved ? 'Enquire about this piece' : 'Request to buy'}
+  </button>
+  <form class="buy-form" action={site.formEndpoint} method="POST" hidden>
+    <input type="hidden" name="artwork" value={`${data.title} (${id})`} />
+    <input type="hidden" name="_subject" value={`Purchase request: ${data.title}`} />
+    <label>
+      <span>Name</span>
+      <input type="text" name="name" autocomplete="name" required />
+    </label>
+    <label>
+      <span>Email</span>
+      <input type="email" name="email" autocomplete="email" required />
+    </label>
+    <label>
+      <span>Message</span>
+      <textarea name="message" rows="4">{`Hi, I'm interested in buying "${data.title}".`}</textarea>
+    </label>
+    <label class="hp" aria-hidden="true">
+      Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" />
+    </label>
+    <button type="submit" class="btn">Send request</button>
+    <p class="form-status" role="status"></p>
+  </form>
+</div>

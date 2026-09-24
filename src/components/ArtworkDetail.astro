@@ -1,0 +1,99 @@
+---
+import type { Artwork } from '../lib/artworks';
+import { site } from '../site.config';
+import BuyForm from './BuyForm.astro';
+
+interface Props {
+  artwork: Artwork;
+}
+
+const { artwork } = Astro.props;
+const { id, data, images, thumbs, mediumLabel, priceLabel } = artwork;
+const multiple = images.length > 1;
+const paragraphs = data.description?.split(/\n\s*\n/) ?? [];
+const facts = [
+  ['Medium', data.materials],
+  ['Size', data.dimensions],
+  ['Year', String(data.year)],
+].filter((f): f is [string, string] => Boolean(f[1]));
+const soldMail = `mailto:${site.contactEmail}?subject=${encodeURIComponent(`About "${data.title}"`)}`;
+---
+
+<article class="detail" data-id={id} data-title={data.title}>
+  <div class="detail-media">
+    <div class="slides" tabindex="0" aria-roledescription="carousel" aria-label={`Images of ${data.title}`}>
+      {
+        images.map((img, i) => (
+          <figure class="slide" style={`--ar: ${(img.width / img.height).toFixed(4)}`}>
+            <img
+              src={img.src}
+              srcset={img.srcset}
+              sizes="(max-width: 900px) 100vw, calc(100vw - 440px)"
+              width={img.width}
+              height={img.height}
+              alt={img.alt}
+              loading={i === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+            />
+          </figure>
+        ))
+      }
+    </div>
+    {
+      multiple && (
+        <>
+          <button type="button" class="nav nav-prev" data-step="-1" aria-label="Previous image" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+          </button>
+          <button type="button" class="nav nav-next" data-step="1" aria-label="Next image">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+          </button>
+          <div class="thumbs">
+            {thumbs.map((t, i) => (
+              <button
+                type="button"
+                class="thumb"
+                data-index={i}
+                aria-label={`Show image ${i + 1} of ${thumbs.length}`}
+                aria-current={i === 0 ? 'true' : 'false'}
+              >
+                <img src={t.src} srcset={t.srcset} sizes="56px" alt="" loading="lazy" decoding="async" />
+              </button>
+            ))}
+          </div>
+        </>
+      )
+    }
+  </div>
+
+  <div class="detail-info">
+    <p class="detail-kicker">{mediumLabel}</p>
+    <h2 class="detail-title">{data.title}</h2>
+    <p class="detail-price">
+      {priceLabel}
+      {data.status === 'reserved' && <span class="badge badge-reserved">reserved</span>}
+    </p>
+    {
+      facts.length > 0 && (
+        <dl class="detail-facts">
+          {facts.map(([k, v]) => (
+            <div>
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
+        </dl>
+      )
+    }
+    {paragraphs.length > 0 && <div class="detail-desc">{paragraphs.map((p) => <p>{p}</p>)}</div>}
+    {
+      data.status === 'sold' ? (
+        <p class="detail-sold">
+          This piece has found a home. <a href={soldMail}>Ask about similar work</a>
+        </p>
+      ) : (
+        <BuyForm artwork={artwork} />
+      )
+    }
+  </div>
+</article>

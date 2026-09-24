@@ -1,0 +1,43 @@
+---
+import type { Artwork } from '../lib/artworks';
+import { url } from '../lib/url';
+
+interface Props {
+  artwork: Artwork;
+  eager?: boolean;
+}
+
+const { artwork, eager = false } = Astro.props;
+const { id, data, cover, placeholder, aspect, priceLabel } = artwork;
+// Tiles are laid out in rows roughly 420px tall on large screens, full width on phones.
+const sizes = `(max-width: 640px) 100vw, ${Math.round(aspect * 440)}px`;
+---
+
+<li
+  class="tile"
+  data-id={id}
+  data-medium={data.medium}
+  style={`--ar: ${aspect.toFixed(4)}; view-transition-name: tile-${id};`}
+>
+  <a class="tile-link" href={url(`art/${id}`)} data-open={id}>
+    <div class="tile-frame" style={`background-image: url(${placeholder})`}>
+      <img
+        src={cover.src}
+        srcset={cover.srcset}
+        sizes={sizes}
+        width={cover.width}
+        height={cover.height}
+        alt={cover.alt}
+        loading={eager ? 'eager' : 'lazy'}
+        fetchpriority={eager ? 'high' : 'auto'}
+        decoding="async"
+        onload="this.classList.add('is-loaded')"
+      />
+      {data.status !== 'available' && <span class={`badge badge-${data.status}`}>{data.status}</span>}
+    </div>
+    <div class="tile-caption">
+      <span class="tile-title">{data.title}</span>
+      <span class="tile-price">{priceLabel}</span>
+    </div>
+  </a>
+</li>

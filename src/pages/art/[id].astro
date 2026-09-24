@@ -1,0 +1,24 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import Gallery from '../../components/Gallery.astro';
+import { getArtworks } from '../../lib/artworks';
+
+// One page per artwork, e.g. /art/harbour-at-dusk. It shows the gallery with
+// that artwork's overlay already open, so shared links land in the right place.
+export const getStaticPaths = (async () => {
+  const artworks = await getArtworks();
+  return artworks.map((artwork) => ({ params: { id: artwork.id }, props: { artwork } }));
+}) satisfies GetStaticPaths;
+
+const { artwork } = Astro.props;
+const artworks = await getArtworks();
+const { data } = artwork;
+const description =
+  data.description?.split('\n')[0] ??
+  [artwork.mediumLabel, data.materials, data.dimensions, data.year].filter(Boolean).join(' · ');
+---
+
+<Base title={data.title} description={description} image={artwork.ogImage}>
+  <Gallery artworks={artworks} initial={artwork} />
+</Base>

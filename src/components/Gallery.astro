@@ -1,0 +1,85 @@
+---
+import type { Artwork } from '../lib/artworks';
+import { mediums, site } from '../site.config';
+import { url } from '../lib/url';
+import Tile from './Tile.astro';
+import Filters from './Filters.astro';
+import ArtworkDetail from './ArtworkDetail.astro';
+
+interface Props {
+  artworks: Artwork[];
+  /** When set, the page loads with this artwork's overlay already open. */
+  initial?: Artwork;
+}
+
+const { artworks, initial } = Astro.props;
+const filterOptions = Object.entries(mediums)
+  .map(([value, label]) => ({
+    value,
+    label,
+    count: artworks.filter((a) => a.data.medium === value).length,
+  }))
+  .filter((o) => o.count > 0);
+const formConfigured = !site.formEndpoint.includes('YOUR_FORM_ID');
+---
+
+<header class="site-header">
+  <a class="site-name" href={url()}>{site.name}</a>
+  <p class="site-tagline">{site.tagline}</p>
+  <nav class="site-nav">
+    <a href="#about">About</a>
+    <a href={`mailto:${site.contactEmail}`}>Contact</a>
+  </nav>
+</header>
+
+<main class="gallery">
+  {filterOptions.length > 1 && <Filters options={filterOptions} total={artworks.length} />}
+  <ul class="grid">
+    {artworks.map((a, i) => <Tile artwork={a} eager={i < 6} />)}
+  </ul>
+  <p class="grid-empty" hidden>Nothing here yet.</p>
+</main>
+
+<section id="about" class="about">
+  <h2>About</h2>
+  <p>{site.about}</p>
+  <p>
+    For enquiries, email <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a>.
+  </p>
+</section>
+
+<footer class="site-footer">
+  <p>© {new Date().getFullYear()} {site.name}. All artwork is copyright of the artist.</p>
+</footer>
+
+<dialog
+  class="overlay"
+  open={initial ? true : undefined}
+  aria-label={initial?.data.title}
+  data-base={url()}
+  data-site-name={site.name}
+  data-home-title={`${site.name} — ${site.tagline}`}
+  data-contact={site.contactEmail}
+  data-form-configured={String(formConfigured)}
+  data-initial={initial?.id}
+>
+  <div class="overlay-scrim"></div>
+  <a class="overlay-close" href={url()} aria-label="Close">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+  </a>
+  <div class="overlay-body">
+    {initial && <ArtworkDetail artwork={initial} />}
+  </div>
+</dialog>
+
+{
+  artworks.map((a) => (
+    <template data-detail={a.id}>
+      <ArtworkDetail artwork={a} />
+    </template>
+  ))
+}
+
+<script>
+  import '../scripts/gallery';
+</script>
