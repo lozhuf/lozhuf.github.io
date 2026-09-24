@@ -22,6 +22,9 @@ const filterOptions = Object.entries(mediums)
   }))
   .filter((o) => o.count > 0);
 const formConfigured = !site.formEndpoint.includes('YOUR_FORM_ID');
+// Sold pieces get their own section below everything that's still for sale.
+const forSale = artworks.filter((a) => a.data.status !== 'sold');
+const sold = artworks.filter((a) => a.data.status === 'sold');
 ---
 
 <header class="site-header">
@@ -47,9 +50,20 @@ const formConfigured = !site.formEndpoint.includes('YOUR_FORM_ID');
 </header>
 
 <main class="gallery">
-  <ul class="grid">
-    {artworks.map((a, i) => <Tile artwork={a} eager={i < 6} />)}
-  </ul>
+  <section class="gallery-section" aria-label="Available">
+    <ul class="grid">
+      {forSale.map((a, i) => <Tile artwork={a} eager={i < 6} />)}
+    </ul>
+  </section>
+  {
+    sold.length > 0 && (
+      <section class="gallery-section gallery-sold" aria-label="Sold">
+        <ul class="grid">
+          {sold.map((a) => <Tile artwork={a} />)}
+        </ul>
+      </section>
+    )
+  }
   <p class="grid-empty" hidden>Nothing here yet.</p>
 </main>
 

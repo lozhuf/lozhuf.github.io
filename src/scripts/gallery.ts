@@ -10,6 +10,7 @@ const scrim = overlay.querySelector<HTMLElement>('.overlay-scrim')!;
 const tiles = [...document.querySelectorAll<HTMLElement>('.tile')];
 const filterButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-filter]')];
 const emptyMessage = document.querySelector<HTMLElement>('.grid-empty');
+const sections = [...document.querySelectorAll<HTMLElement>('.gallery-section')];
 
 const { base = '/', siteName = '', homeTitle = document.title, contact = '' } = overlay.dataset;
 const basePath = base.endsWith('/') ? base : `${base}/`;
@@ -62,6 +63,10 @@ function applyFilter(medium: string, animate: boolean) {
     }
     for (const button of filterButtons) {
       button.setAttribute('aria-pressed', String(button.dataset.filter === medium));
+    }
+    // Hide a section (e.g. "Sold") when the filter leaves nothing in it.
+    for (const section of sections) {
+      section.hidden = !section.querySelector('.tile:not([hidden])');
     }
     if (emptyMessage) emptyMessage.hidden = visible > 0;
   };

@@ -316,6 +316,20 @@ h3 {
   flex-shrink: 0;
 }
 
+.gallery-section[hidden] {
+  display: none;
+}
+
+/* Hairline between the pieces for sale and the sold ones, fading out at each end. */
+.gallery-sold::before {
+  content: '';
+  display: block;
+  width: 50vw;
+  height: 1px;
+  margin: clamp(40px, 5vw, 64px) auto clamp(56px, 7.5vw, 96px);
+  background: linear-gradient(to right, transparent, #cfc8bb 35%, #cfc8bb 65%, transparent);
+}
+
 .grid-empty {
   color: var(--muted);
   text-align: center;
