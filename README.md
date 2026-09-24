@@ -46,7 +46,8 @@ This creates `src/content/artworks/harbour-at-dusk/artwork.json`. Then:
 | `currency` | no | e.g. `"EUR"`. Defaults to the currency in `src/site.config.ts`. |
 | `status` | no | `available` (default), `reserved` or `sold`. Sold pieces stay visible, with no buy button. |
 | `alt` | no | Description of the main image for screen readers. Defaults to the title. |
-| `order` | no | Pin pieces to the front: lower numbers first. Otherwise newest first. |
+| `order` | no | Position in the gallery, lowest first. Existing pieces are numbered 10, 20, 30… in the order of the original Google Doc, so use e.g. `5` to put a new piece first or `25` to slot it between the 2nd and 3rd. Pieces without `order` appear after all numbered ones, newest first. |
+| `instagram` | no | Link to the Instagram post; shown as "View on Instagram". |
 
 The folder name becomes the page address: `/art/harbour-at-dusk`. If a field is misspelled or has the wrong type, `npm run dev` / `npm run build` stops and names the field.
 

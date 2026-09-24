@@ -20,8 +20,9 @@ export const site = {
   formEndpoint: 'https://formspree.io/f/xrpbllkg',
 
   /** Currency used when an artwork doesn't set its own. */
-  defaultCurrency: 'GBP',
-  locale: 'en-GB',
+  defaultCurrency: 'DKK',
+  /** Controls number formatting, e.g. 'da-DK' shows "3.000 kr." */
+  locale: 'da-DK',
 };
 
 /**

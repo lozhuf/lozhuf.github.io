@@ -591,6 +591,15 @@ h3 {
   color: #3d3a35;
 }
 
+.detail-link a {
+  color: var(--muted);
+  text-underline-offset: 3px;
+}
+
+.detail-link a:hover {
+  color: var(--ink);
+}
+
 .detail-sold {
   color: var(--muted);
 }

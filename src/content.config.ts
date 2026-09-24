@@ -31,6 +31,8 @@ const artworks = defineCollection({
     description: z.string().optional(),
     /** Alt text for the main image. Defaults to the title. */
     alt: z.string().optional(),
+    /** Link to the Instagram post for this piece. */
+    instagram: z.url().optional(),
     /** Lower numbers appear first. Artworks without it are sorted newest first. */
     order: z.number().optional(),
   }),

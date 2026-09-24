@@ -87,6 +87,15 @@ const soldMail = `mailto:${site.contactEmail}?subject=${encodeURIComponent(`Abou
     }
     {paragraphs.length > 0 && <div class="detail-desc">{paragraphs.map((p) => <p>{p}</p>)}</div>}
     {
+      data.instagram && (
+        <p class="detail-link">
+          <a href={data.instagram} target="_blank" rel="noopener">
+            View on Instagram
+          </a>
+        </p>
+      )
+    }
+    {
       data.status === 'sold' ? (
         <p class="detail-sold">
           This piece has found a home. <a href={soldMail}>Ask about similar work</a>
