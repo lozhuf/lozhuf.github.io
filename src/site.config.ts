@@ -8,7 +8,7 @@ export const site = {
   description: 'Original charcoal drawings and paintings by Laurie Hufford.',
 
   /** Linked from the envelope icon in the header, and for enquiries about sold pieces. */
-  contactEmail: 'hello@lauriehufford.com',
+  contactEmail: 'lauriehufford+hello@gmail.com',
   instagram: 'https://www.instagram.com/lozhuf/',
 
   /**
