@@ -25,36 +25,51 @@ const soldMail = `mailto:${site.contactEmail}?subject=${encodeURIComponent(`Abou
       {
         images.map((img, i) => (
           <figure class="slide" style={`--ar: ${(img.width / img.height).toFixed(4)}`}>
-            <img
-              src={img.src}
-              srcset={img.srcset}
-              sizes="(max-width: 900px) 100vw, calc(100vw - 440px)"
-              width={img.width}
-              height={img.height}
-              alt={img.alt}
-              loading={i === 0 ? 'eager' : 'lazy'}
-              decoding="async"
-            />
+            {img.video ? (
+              <video
+                src={img.video}
+                poster={img.src}
+                width={img.width}
+                height={img.height}
+                aria-label={img.alt}
+                muted
+                loop
+                playsinline
+                controls
+                preload="none"
+              />
+            ) : (
+              <img
+                src={img.src}
+                srcset={img.srcset}
+                sizes="(max-width: 900px) 100vw, calc(100vw - 440px)"
+                width={img.width}
+                height={img.height}
+                alt={img.alt}
+                loading={i === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+              />
+            )}
           </figure>
         ))
       }
     </div>
+    <button type="button" class="nav nav-prev" data-step="-1" aria-label="Previous">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+    </button>
+    <button type="button" class="nav nav-next" data-step="1" aria-label="Next">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+    </button>
     {
       multiple && (
         <>
-          <button type="button" class="nav nav-prev" data-step="-1" aria-label="Previous image" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
-          </button>
-          <button type="button" class="nav nav-next" data-step="1" aria-label="Next image">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
-          </button>
           <div class="thumbs">
             {thumbs.map((t, i) => (
               <button
                 type="button"
-                class="thumb"
+                class:list={['thumb', { 'thumb-video': t.video }]}
                 data-index={i}
-                aria-label={`Show image ${i + 1} of ${thumbs.length}`}
+                aria-label={`Show ${t.video ? 'video' : 'image'} ${i + 1} of ${thumbs.length}`}
                 aria-current={i === 0 ? 'true' : 'false'}
               >
                 <img src={t.src} srcset={t.srcset} sizes="56px" alt="" loading="lazy" decoding="async" />

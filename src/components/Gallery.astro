@@ -60,6 +60,7 @@ const formConfigured = !site.formEndpoint.includes('YOUR_FORM_ID');
 
 <dialog
   class="overlay"
+  tabindex="-1"
   open={initial ? true : undefined}
   aria-label={initial?.data.title}
   data-base={url()}

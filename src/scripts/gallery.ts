@@ -88,9 +88,12 @@ for (const button of filterButtons) {
 
 interface Carousel {
   index(): number;
-  go(index: number): void;
-  step(delta: number): void;
+  count: number;
+  go(index: number, smooth?: boolean): void;
+  /** Move by `delta` slides; returns false if that would go past either end. */
+  step(delta: number): boolean;
   image(): HTMLImageElement | null;
+  sync(): void;
 }
 
 function createCarousel(root: HTMLElement): Carousel | null {
@@ -103,19 +106,30 @@ function createCarousel(root: HTMLElement): Carousel | null {
 
   const index = () =>
     track.clientWidth ? Math.round(track.scrollLeft / track.clientWidth) : 0;
+  // The slide we're scrolling to, so quick repeated presses keep counting from there.
+  let target: number | null = null;
 
   const sync = () => {
     const i = index();
-    if (prev) prev.disabled = i <= 0;
-    if (next) next.disabled = i >= slides.length - 1;
+    if (i === target) target = null;
+    // At the first/last slide the arrows move on to the neighbouring artwork, if there is one.
+    if (prev) prev.disabled = i <= 0 && !neighbour(-1);
+    if (next) next.disabled = i >= slides.length - 1 && !neighbour(1);
     thumbs.forEach((t, n) => t.setAttribute('aria-current', String(n === i)));
+    // Play the video on the current slide (they're silent), pause any others.
+    slides.forEach((slide, n) => {
+      const video = slide.querySelector('video');
+      if (!video) return;
+      if (n === i && !reducedMotion.matches) video.play().catch(() => {});
+      else video.pause();
+    });
   };
 
-  const go = (i: number) => {
-    const target = Math.max(0, Math.min(slides.length - 1, i));
+  const go = (i: number, smooth = true) => {
+    target = Math.max(0, Math.min(slides.length - 1, i));
     track.scrollTo({
       left: target * track.clientWidth,
-      behavior: reducedMotion.matches ? 'auto' : 'smooth',
+      behavior: smooth && !reducedMotion.matches ? 'smooth' : 'auto',
     });
   };
 
@@ -128,17 +142,81 @@ function createCarousel(root: HTMLElement): Carousel | null {
     },
     { passive: true },
   );
-  prev?.addEventListener('click', () => go(index() - 1));
-  next?.addEventListener('click', () => go(index() + 1));
   thumbs.forEach((t) => t.addEventListener('click', () => go(Number(t.dataset.index))));
   sync();
 
   return {
     index,
+    count: slides.length,
     go,
-    step: (delta) => go(index() + delta),
+    step: (delta) => {
+      const from = target ?? index();
+      const to = from + delta;
+      if (to < 0 || to >= slides.length) return false;
+      go(to);
+      return true;
+    },
     image: () => slides[index()]?.querySelector('img') ?? null,
+    sync,
   };
+}
+
+/** The visible artwork before (-1) or after (1) the open one, in gallery order. */
+function neighbour(direction: number): string | null {
+  const visible = tiles.filter((t) => !t.hidden);
+  const at = visible.findIndex((t) => t.dataset.id === currentId);
+  if (at < 0) return null;
+  return visible[at + direction]?.dataset.id ?? null;
+}
+
+/** Arrow buttons and keys: step through this artwork's images, then on to the next artwork. */
+function navigate(direction: number, fromButton = false) {
+  if (busy || !carousel) return;
+  if (carousel.step(direction)) return;
+  const id = neighbour(direction);
+  if (id) switchArtwork(id, direction, fromButton);
+}
+
+/** Replace the open artwork with a neighbouring one, sliding in from the side it came from. */
+async function switchArtwork(id: string, direction: number, fromButton: boolean) {
+  busy = true;
+  const shift = reducedMotion.matches ? 0 : 32;
+  const old = overlayBody.querySelector('.detail');
+  try {
+    if (old) {
+      await old.animate(
+        [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateX(${-direction * shift}px)` }],
+        { duration: 160, easing: 'ease-in', fill: 'forwards' },
+      ).finished;
+    }
+    if (!renderDetail(id)) return;
+    // Coming backwards, start on the artwork's last image.
+    if (direction < 0 && carousel) carousel.go(carousel.count - 1, false);
+    carousel?.sync();
+    history.replaceState({ artwork: id }, '', artworkUrl(id));
+    // Keep the tile in view behind the overlay, so closing can animate back to it.
+    tiles.find((t) => t.dataset.id === id)?.scrollIntoView({ block: 'center' });
+    const fresh = overlayBody.querySelector('.detail');
+    if (fresh) {
+      await fresh.animate(
+        [{ opacity: 0, transform: `translateX(${direction * shift}px)` }, { opacity: 1, transform: 'none' }],
+        { duration: 220, easing: EASE },
+      ).finished;
+    }
+  } finally {
+    busy = false;
+  }
+  // The old buttons were removed with the old artwork. If someone tabbed to an arrow and
+  // pressed Enter, put them back on the new arrow; otherwise focus the overlay itself, so
+  // arrow keys keep working without outlining a button.
+  const button = overlayBody.querySelector<HTMLButtonElement>(direction > 0 ? '.nav-next' : '.nav-prev');
+  if (fromButton && button && !button.disabled) button.focus({ preventScroll: true });
+  else focusOverlay();
+}
+
+/** Focus the dialog itself: keys work, but no focus ring appears until someone presses Tab. */
+function focusOverlay() {
+  overlay.focus({ preventScroll: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -242,7 +320,7 @@ async function openArtwork(id: string, animate = true) {
   const alreadyOpen = overlay.open;
   if (!renderDetail(id)) return;
   if (!alreadyOpen) overlay.showModal();
-  overlayClose.focus({ preventScroll: true });
+  focusOverlay();
 
   if (alreadyOpen || !animate || reducedMotion.matches) {
     if (!alreadyOpen && animate) await fade([scrim, overlayBody, overlayClose], 0, 1, 200);
@@ -378,12 +456,18 @@ overlay.addEventListener('close', () => {
   }
 });
 
+overlay.addEventListener('click', (event) => {
+  const button = (event.target as Element).closest<HTMLButtonElement>('.nav');
+  // detail is 0 when the button was pressed with Enter/Space rather than clicked.
+  if (button) navigate(Number(button.dataset.step), event.detail === 0);
+});
+
 overlay.addEventListener('keydown', (event) => {
   if (!carousel) return;
-  const field = (event.target as Element).closest('input, textarea, select');
+  const field = (event.target as Element).closest('input, textarea, select, video');
   if (field) return;
-  if (event.key === 'ArrowLeft') carousel.step(-1);
-  else if (event.key === 'ArrowRight') carousel.step(1);
+  if (event.key === 'ArrowLeft') navigate(-1);
+  else if (event.key === 'ArrowRight') navigate(1);
   else return;
   event.preventDefault();
 });
@@ -471,5 +555,5 @@ if (overlay.dataset.initial) {
   overlay.close();
   overlay.showModal();
   attachDetail();
-  overlayClose.focus({ preventScroll: true });
+  focusOverlay();
 }

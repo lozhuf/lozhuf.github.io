@@ -21,6 +21,7 @@ This creates `src/content/artworks/harbour-at-dusk/artwork.json`. Then:
 
 1. Copy the photos into that folder. They're shown in filename order and the first one is the cover in the gallery, so name them `01.jpg`, `02.jpg`, …
    Full-size photos are fine: smaller web versions are made automatically.
+   Videos (`.mp4`) can go in the same sequence, e.g. `04.mp4`, together with a cover image named `04.poster.jpg`. They play silently on a loop when their slide is shown.
 2. Fill in `artwork.json`:
 
 ```json
