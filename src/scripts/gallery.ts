@@ -1,6 +1,6 @@
 /**
- * Gallery interactions: filtering, the artwork overlay (with its grow-from-tile
- * animation), the image carousel, browser history and the purchase form.
+ * Gallery interactions: the artwork overlay (with its grow-from-tile animation),
+ * the image carousel, browser history and the purchase form.
  */
 
 const overlay = document.querySelector<HTMLDialogElement>('dialog.overlay')!;
@@ -8,9 +8,7 @@ const overlayBody = overlay.querySelector<HTMLElement>('.overlay-body')!;
 const overlayClose = overlay.querySelector<HTMLAnchorElement>('.overlay-close')!;
 const scrim = overlay.querySelector<HTMLElement>('.overlay-scrim')!;
 const tiles = [...document.querySelectorAll<HTMLElement>('.tile')];
-const filterButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-filter]')];
-const emptyMessage = document.querySelector<HTMLElement>('.grid-empty');
-const sections = [...document.querySelectorAll<HTMLElement>('.gallery-section')];
+
 
 const { base = '/', siteName = '', homeTitle = document.title, contact = '' } = overlay.dataset;
 const basePath = base.endsWith('/') ? base : `${base}/`;
@@ -40,52 +38,9 @@ function idFromLocation(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+/** The gallery page this overlay belongs to, e.g. /medium. */
 function galleryUrl(): string {
-  const medium = new URLSearchParams(location.search).get('medium');
-  return medium ? `${basePath}?medium=${encodeURIComponent(medium)}` : basePath;
-}
-
-// ---------------------------------------------------------------------------
-// Filtering
-
-function currentFilter(): string {
-  const medium = new URLSearchParams(location.search).get('medium');
-  return medium && filterButtons.some((b) => b.dataset.filter === medium) ? medium : 'all';
-}
-
-function applyFilter(medium: string, animate: boolean) {
-  const update = () => {
-    let visible = 0;
-    for (const tile of tiles) {
-      const show = medium === 'all' || tile.dataset.medium === medium;
-      tile.hidden = !show;
-      if (show) visible++;
-    }
-    for (const button of filterButtons) {
-      button.setAttribute('aria-pressed', String(button.dataset.filter === medium));
-    }
-    // Hide a section (e.g. "Sold") when the filter leaves nothing in it.
-    for (const section of sections) {
-      section.hidden = !section.querySelector('.tile:not([hidden])');
-    }
-    if (emptyMessage) emptyMessage.hidden = visible > 0;
-  };
-  if (animate && document.startViewTransition && !reducedMotion.matches) {
-    document.startViewTransition(update);
-  } else {
-    update();
-  }
-}
-
-for (const button of filterButtons) {
-  button.addEventListener('click', () => {
-    const medium = button.dataset.filter ?? 'all';
-    const next = new URL(location.href);
-    if (medium === 'all') next.searchParams.delete('medium');
-    else next.searchParams.set('medium', medium);
-    history.replaceState(history.state, '', next);
-    applyFilter(medium, true);
-  });
+  return overlay.dataset.gallery || basePath;
 }
 
 // ---------------------------------------------------------------------------
@@ -166,12 +121,23 @@ function createCarousel(root: HTMLElement): Carousel | null {
   };
 }
 
+/** Artwork ids in gallery order, for the visible tiles (a set's tile expands to all its pieces). */
+function sequence(): string[] {
+  return tiles.filter((t) => !t.hidden).flatMap((t) => (t.dataset.members || t.dataset.id!).split(' '));
+}
+
+/** The tile showing an artwork: its own tile, or the tile of the set it belongs to. */
+function tileFor(id: string | null): HTMLElement | undefined {
+  if (!id) return undefined;
+  return tiles.find((t) => t.dataset.id === id || (t.dataset.members ?? '').split(' ').includes(id));
+}
+
 /** The visible artwork before (-1) or after (1) the open one, in gallery order. */
 function neighbour(direction: number): string | null {
-  const visible = tiles.filter((t) => !t.hidden);
-  const at = visible.findIndex((t) => t.dataset.id === currentId);
+  const ids = sequence();
+  const at = currentId ? ids.indexOf(currentId) : -1;
   if (at < 0) return null;
-  return visible[at + direction]?.dataset.id ?? null;
+  return ids[at + direction] ?? null;
 }
 
 /** Arrow buttons and keys: step through this artwork's images, then on to the next artwork. */
@@ -200,7 +166,7 @@ async function switchArtwork(id: string, direction: number, fromButton: boolean)
     carousel?.sync();
     history.replaceState({ artwork: id }, '', artworkUrl(id));
     // Keep the tile in view behind the overlay, so closing can animate back to it.
-    tiles.find((t) => t.dataset.id === id)?.scrollIntoView({ block: 'center' });
+    tileFor(id)?.scrollIntoView({ block: 'center' });
     const fresh = overlayBody.querySelector('.detail');
     if (fresh) {
       await fresh.animate(
@@ -478,7 +444,6 @@ overlay.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('popstate', () => {
-  applyFilter(currentFilter(), false);
   const id = idFromLocation();
   if (id && id !== currentId) {
     pushedEntry = history.state?.artwork === id;
@@ -551,8 +516,6 @@ overlay.addEventListener('submit', async (event) => {
 
 // ---------------------------------------------------------------------------
 // Start-up
-
-applyFilter(currentFilter(), false);
 
 // Landed directly on /art/<id>: the overlay was rendered open by the server.
 // Re-open it as a proper modal so focus, Esc and scrolling behave.

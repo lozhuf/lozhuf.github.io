@@ -27,7 +27,7 @@ export const site = {
 
 /**
  * The allowed values for an artwork's "medium" field, and how each is labelled
- * in the filter bar. Add a line here to introduce a new category.
+ * (shown above the title in the artwork details).
  */
 export const mediums = {
   charcoal: 'Charcoal',
@@ -38,3 +38,25 @@ export const mediums = {
 } as const;
 
 export type Medium = keyof typeof mediums;
+
+/**
+ * Size categories, each with its own page (/large, /medium, /small), worked out
+ * from each artwork's "dimensions" using its longest side in cm.
+ */
+export const sizes = [
+  { key: 'large', label: 'Large', description: 'Over 60 cm', minLongestSide: 61 },
+  { key: 'medium', label: 'Medium', description: '31–60 cm', minLongestSide: 31 },
+  { key: 'small', label: 'Small', description: 'Up to 30 cm', minLongestSide: 0 },
+] as const;
+
+export type Size = (typeof sizes)[number]['key'];
+
+/**
+ * Sets of similar pieces shown as a single tile in the gallery. Put an artwork
+ * in a set by adding e.g. "group": "small-studies" to its artwork.json.
+ * Each piece can still be opened and bought on its own.
+ */
+export const groups: Record<string, { title: string }> = {
+  'small-studies': { title: 'Small studies' },
+  'charcoal-sketches': { title: 'Charcoal sketches' },
+};

@@ -88,27 +88,16 @@ h3 {
 /* ---------------------------------------------------------------------------
    Header and footer
 --------------------------------------------------------------------------- */
-/* Logo, filters and icons on one line; on narrow screens the filters get their own row. */
+/* Logo on the left (with the size links next to it on size pages), contact
+   icons on the right. */
 .site-header {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-areas: 'logo filters nav';
-  align-items: end;
+  display: flex;
+  align-items: flex-end;
   gap: 20px clamp(24px, 4vw, 56px);
   padding: clamp(16px, 2.5vw, 32px) var(--page-pad) clamp(24px, 3.5vw, 44px);
 }
 
-@media (max-width: 760px) {
-  .site-header {
-    grid-template-columns: auto 1fr;
-    grid-template-areas:
-      'logo nav'
-      'filters filters';
-  }
-}
-
 .site-name {
-  grid-area: logo;
   display: block;
 }
 
@@ -117,13 +106,64 @@ h3 {
   height: clamp(72px, 9vw, 120px);
 }
 
-.site-nav {
-  grid-area: nav;
+/* Size pages: a smaller logo, with links to the other sizes beside it. */
+.site-header-compact .site-name img {
+  height: clamp(64px, 5vw, 72px);
+}
+
+.size-nav {
   display: flex;
-  justify-self: end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Narrow screens: logo and icons on top, size links on their own row below. */
+@media (max-width: 760px) {
+  .site-header-compact {
+    flex-wrap: wrap;
+  }
+
+  .size-nav {
+    order: 1;
+    flex-basis: 100%;
+  }
+}
+
+.size-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 7px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.size-link:hover {
+  border-color: var(--ink);
+}
+
+.size-link[aria-current='page'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+
+.size-link-count {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.site-nav {
+  display: flex;
   gap: 4px;
   /* The icons sit inside 44px tap targets; pull them out so the drawn icons line up. */
-  margin: 0 -10px -12px 0;
+  margin: 0 -10px -12px auto;
 }
 
 .site-nav a {
@@ -160,50 +200,6 @@ h3 {
   color: var(--muted);
   font-size: 14px;
   text-align: center;
-}
-
-/* ---------------------------------------------------------------------------
-   Filters
---------------------------------------------------------------------------- */
-.filters {
-  grid-area: filters;
-  display: none;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.js .filters {
-  display: flex;
-}
-
-.filter {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 7px 16px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: transparent;
-  cursor: pointer;
-  transition:
-    background-color 0.2s,
-    border-color 0.2s,
-    color 0.2s;
-}
-
-.filter:hover {
-  border-color: var(--ink);
-}
-
-.filter[aria-pressed='true'] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--bg);
-}
-
-.filter-count {
-  font-size: 12px;
-  opacity: 0.6;
 }
 
 /* ---------------------------------------------------------------------------
@@ -260,6 +256,26 @@ h3 {
   transition:
     transform 0.35s var(--ease),
     box-shadow 0.35s var(--ease);
+}
+
+/* Sets of pieces: two cards peeking out behind the cover, like a small stack. */
+.tile-group .tile-frame::before,
+.tile-group .tile-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: #ebe7df;
+  box-shadow: 0 1px 3px rgb(28 27 25 / 0.2);
+}
+
+.tile-group .tile-frame::before {
+  transform: translate(7px, -7px);
+}
+
+.tile-group .tile-frame::after {
+  transform: translate(14px, -14px);
+  background: #f0ede6;
 }
 
 .tile-frame img {
@@ -320,6 +336,109 @@ h3 {
   display: none;
 }
 
+.show-all {
+  margin: clamp(40px, 5vw, 64px) 0 0;
+  text-align: center;
+}
+
+.pill-button {
+  display: inline-block;
+  padding: 12px 28px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.pill-button:hover {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+/* ---------------------------------------------------------------------------
+   Overview (home page): one card per size, each with a fanned stack of examples.
+--------------------------------------------------------------------------- */
+.overview {
+  padding: 0 var(--page-pad);
+}
+
+.size-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(24px, 4vw, 64px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 760px) {
+  .size-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.size-card {
+  display: block;
+  padding: clamp(16px, 2vw, 32px) 12px 28px;
+  border-radius: 4px;
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.35s var(--ease);
+}
+
+.size-card:hover,
+.size-card:focus-visible {
+  background: var(--surface);
+}
+
+.stack {
+  position: relative;
+  aspect-ratio: 1;
+  margin-bottom: clamp(16px, 2vw, 28px);
+}
+
+.stack img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: auto;
+  height: auto;
+  max-width: 58%;
+  max-height: 80%;
+  transform: translate(-50%, -50%) translateX(var(--x)) rotate(var(--r));
+  box-shadow:
+    0 2px 4px rgb(28 27 25 / 0.14),
+    0 14px 28px -10px rgb(28 27 25 / 0.4);
+  transition: transform 0.45s var(--ease);
+}
+
+/* The stack fans out a little further on hover. */
+@media (hover: hover) and (pointer: fine) {
+  .size-card:hover .stack img {
+    transform: translate(-50%, -50%) translateX(calc(var(--x) * 1.35)) rotate(calc(var(--r) * 1.5));
+  }
+}
+
+.size-card-title {
+  margin: 0 0 6px;
+  font-size: clamp(24px, 2.4vw, 32px);
+}
+
+.size-card-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.size-card-price {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+}
+
 /* Hairline between the pieces for sale and the sold ones, fading out at each end. */
 .gallery-sold::before {
   content: '';
@@ -345,12 +464,6 @@ h3 {
   text-transform: uppercase;
   background: var(--bg);
   color: var(--ink);
-}
-
-/* Smooth reflow when filtering (browsers with View Transitions). */
-::view-transition-group(*) {
-  animation-duration: 0.4s;
-  animation-timing-function: var(--ease);
 }
 
 /* ---------------------------------------------------------------------------
@@ -787,7 +900,4 @@ h3 {
     transition-duration: 0.01ms !important;
   }
 
-  ::view-transition-group(*) {
-    animation: none;
-  }
 }

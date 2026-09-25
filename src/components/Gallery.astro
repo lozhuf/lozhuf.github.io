@@ -1,76 +1,99 @@
 ---
-import type { Artwork } from '../lib/artworks';
-import { mediums, site } from '../site.config';
+import { formatAmount, type Artwork } from '../lib/artworks';
+import { categories, categoryCounts, inCategory, type Category } from '../lib/categories';
+import { groups, site } from '../site.config';
 import { url } from '../lib/url';
 import Tile from './Tile.astro';
-import Filters from './Filters.astro';
 import ArtworkDetail from './ArtworkDetail.astro';
-import logo from '../assets/logo.svg';
+import SiteHeader from './SiteHeader.astro';
+import SiteFooter from './SiteFooter.astro';
 
 interface Props {
   artworks: Artwork[];
+  /** Which pieces to show: one size, or all of them. */
+  category: Category;
   /** When set, the page loads with this artwork's overlay already open. */
   initial?: Artwork;
 }
 
-const { artworks, initial } = Astro.props;
-const filterOptions = Object.entries(mediums)
-  .map(([value, label]) => ({
-    value,
-    label,
-    count: artworks.filter((a) => a.data.medium === value).length,
-  }))
-  .filter((o) => o.count > 0);
+const { artworks, category, initial } = Astro.props;
 const formConfigured = !site.formEndpoint.includes('YOUR_FORM_ID');
+const pageTitle = categories.find((c) => c.key === category)!.title;
+const shown = artworks.filter((a) => inCategory(a, category));
+
 // Sold pieces get their own section below everything that's still for sale.
-const forSale = artworks.filter((a) => a.data.status !== 'sold');
-const sold = artworks.filter((a) => a.data.status === 'sold');
+const forSale = shown.filter((a) => a.data.status !== 'sold');
+const sold = shown.filter((a) => a.data.status === 'sold');
+
+// Pieces in the same group (e.g. "small-studies") share one tile, placed where
+// the group's first piece would be.
+type Item =
+  | { kind: 'art'; artwork: Artwork }
+  | { kind: 'group'; key: string; members: Artwork[] };
+const items: Item[] = [];
+const groupItems = new Map<string, Extract<Item, { kind: 'group' }>>();
+for (const artwork of forSale) {
+  const key = artwork.data.group;
+  if (!key) {
+    items.push({ kind: 'art', artwork });
+    continue;
+  }
+  let item = groupItems.get(key);
+  if (!item) {
+    item = { kind: 'group', key, members: [] };
+    groupItems.set(key, item);
+    items.push(item);
+  }
+  item.members.push(artwork);
+}
+
+function groupPrice(members: Artwork[]): string {
+  const prices = members.map((m) => m.data.price).filter((p): p is number => p !== undefined);
+  if (prices.length === 0) return 'Price on request';
+  const min = Math.min(...prices);
+  return prices.every((p) => p === min) ? `${formatAmount(min)} each` : `From ${formatAmount(min)}`;
+}
 ---
 
-<header class="site-header">
-  <a class="site-name" href={url()}>
-    <img src={logo.src} width={logo.width} height={logo.height} alt={site.name} />
-  </a>
-  {filterOptions.length > 1 && <Filters options={filterOptions} total={artworks.length} />}
-  <nav class="site-nav">
-    <a href={site.instagram} aria-label="Instagram" title="Instagram" rel="me noopener" target="_blank">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="3" y="3" width="18" height="18" rx="5"></rect>
-        <circle cx="12" cy="12" r="4"></circle>
-        <circle cx="17.5" cy="6.5" r="0.6" class="fill"></circle>
-      </svg>
-    </a>
-    <a href={`mailto:${site.contactEmail}`} aria-label="Email" title="Email">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="3" y="5" width="18" height="14" rx="2"></rect>
-        <path d="M3.5 6.5l8.5 6.5 8.5-6.5"></path>
-      </svg>
-    </a>
-  </nav>
-</header>
+<SiteHeader current={category} counts={categoryCounts(artworks)} />
 
 <main class="gallery">
   <section class="gallery-section" aria-label="Available">
     <ul class="grid">
-      {forSale.map((a, i) => <Tile artwork={a} eager={i < 6} />)}
+      {
+        items.map((item, i) =>
+          item.kind === 'art' || item.members.length === 1 ? (
+            <Tile artwork={item.kind === 'art' ? item.artwork : item.members[0]} eager={i < 6} />
+          ) : (
+            <Tile
+              artwork={item.members[0]}
+              eager={i < 6}
+              group={{
+                title: groups[item.key].title,
+                members: item.members,
+                priceLabel: groupPrice(item.members),
+              }}
+            />
+          ),
+        )
+      }
     </ul>
   </section>
   {
     sold.length > 0 && (
       <section class="gallery-section gallery-sold" aria-label="Sold">
         <ul class="grid">
-          {sold.map((a) => <Tile artwork={a} />)}
+          {sold.map((a) => (
+            <Tile artwork={a} />
+          ))}
         </ul>
       </section>
     )
   }
-  <p class="grid-empty" hidden>Nothing here yet.</p>
+  {shown.length === 0 && <p class="grid-empty">Nothing here yet.</p>}
 </main>
 
-
-<footer class="site-footer">
-  <p>© {new Date().getFullYear()} {site.name}.<br />All artwork is copyright of the artist.</p>
-</footer>
+<SiteFooter />
 
 <dialog
   class="overlay"
@@ -79,13 +102,14 @@ const sold = artworks.filter((a) => a.data.status === 'sold');
   aria-label={initial?.data.title}
   data-base={url()}
   data-site-name={site.name}
-  data-home-title={`${site.name} — ${site.tagline}`}
+  data-home-title={`${pageTitle} — ${site.name}`}
+  data-gallery={url(category)}
   data-contact={site.contactEmail}
   data-form-configured={String(formConfigured)}
   data-initial={initial?.id}
 >
   <div class="overlay-scrim"></div>
-  <a class="overlay-close" href={url()} aria-label="Close">
+  <a class="overlay-close" href={url(category)} aria-label="Close">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
   </a>
   <div class="overlay-body">
@@ -94,7 +118,7 @@ const sold = artworks.filter((a) => a.data.status === 'sold');
 </dialog>
 
 {
-  artworks.map((a) => (
+  shown.map((a) => (
     <template data-detail={a.id}>
       <ArtworkDetail artwork={a} />
     </template>

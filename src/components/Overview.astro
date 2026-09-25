@@ -1,0 +1,83 @@
+---
+import type { Artwork } from '../lib/artworks';
+import { categoryCounts } from '../lib/categories';
+import { site, sizes } from '../site.config';
+import { url } from '../lib/url';
+import SiteHeader from './SiteHeader.astro';
+import SiteFooter from './SiteFooter.astro';
+
+interface Props {
+  artworks: Artwork[];
+}
+
+const { artworks } = Astro.props;
+const counts = categoryCounts(artworks);
+const forSale = artworks.filter((a) => a.data.status !== 'sold');
+const number = new Intl.NumberFormat(site.locale);
+const currency = new Intl.NumberFormat(site.locale, {
+  style: 'currency',
+  currency: site.defaultCurrency,
+  maximumFractionDigits: 0,
+});
+
+// One card per size: a small stack of example pieces (featured ones first), with
+// how many there are and the price range.
+const cards = sizes
+  .map((size) => {
+    const pieces = forSale.filter((a) => a.size === size.key);
+    const examples = [
+      ...pieces.filter((a) => a.data.featured),
+      ...pieces.filter((a) => !a.data.featured),
+    ].slice(0, 3);
+    const prices = pieces.map((a) => a.data.price).filter((p): p is number => p !== undefined);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const priceRange =
+      prices.length === 0 ? '' : min === max ? currency.format(min) : `${number.format(min)}–${currency.format(max)}`;
+    return { ...size, count: pieces.length, examples, priceRange };
+  })
+  .filter((card) => card.count > 0);
+---
+
+<SiteHeader />
+
+<main class="overview">
+  <ul class="size-cards">
+    {
+      cards.map((card) => (
+        <li>
+          <a class="size-card" href={url(card.key)}>
+            <div class="stack">
+              {/* Drawn back to front, so the first example ends up on top. */}
+              {card.examples
+                .map((a, i) => ({ a, i }))
+                .reverse()
+                .map(({ a, i }) => (
+                  <img
+                    src={a.cover.src}
+                    srcset={a.cover.srcset}
+                    sizes="(max-width: 760px) 70vw, 24vw"
+                    width={a.cover.width}
+                    height={a.cover.height}
+                    alt=""
+                    style={`--x: ${[0, -18, 18][i]}%; --r: ${[0, -7, 7][i]}deg`}
+                    decoding="async"
+                  />
+                ))}
+            </div>
+            <h2 class="size-card-title">{card.label}</h2>
+            <p class="size-card-meta">
+              {card.description} · {card.count} {card.count === 1 ? 'piece' : 'pieces'}
+            </p>
+            {card.priceRange && <p class="size-card-price">{card.priceRange}</p>}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+  <p class="show-all">
+    <a class="pill-button" href={url('all')}>Show all {counts.all} pieces</a>
+  </p>
+</main>
+
+<SiteFooter />

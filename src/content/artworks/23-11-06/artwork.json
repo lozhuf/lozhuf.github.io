@@ -7,5 +7,7 @@
   "price": 800,
   "status": "available",
   "instagram": "https://www.instagram.com/p/CzT_FvILxEe/",
-  "order": 150
+  "order": 150,
+  "group": "small-studies",
+  "featured": true
 }

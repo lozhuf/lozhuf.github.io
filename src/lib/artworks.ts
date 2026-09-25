@@ -1,7 +1,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
-import { mediums, site, type Medium } from '../site.config';
+import { mediums, site, sizes, type Medium, type Size } from '../site.config';
 
 // Every image and video inside an artwork folder, keyed by path. Vite resolves these at build time.
 // A video (e.g. 04.mp4) needs a matching cover image (04.poster.jpg), shown until it plays.
@@ -42,6 +42,8 @@ export interface Artwork {
   data: CollectionEntry<'artworks'>['data'];
   mediumLabel: string;
   priceLabel: string;
+  /** Size category for the gallery filters, from the longest side of `dimensions`. */
+  size: Size;
   aspect: number;
   /** Tile-sized cover image for the grid. */
   cover: ArtworkImage;
@@ -86,14 +88,26 @@ function mediaFor(id: string): MediaSource[] {
     .map(([, item]) => item);
 }
 
+/** Size category from free-text dimensions like "60 × 80 cm" (medium if unreadable). */
+export function sizeOf(dimensions: string | undefined): Size {
+  const numbers = (dimensions?.match(/\d+(\.\d+)?/g) ?? []).map(Number);
+  if (numbers.length === 0) return 'medium';
+  const longest = Math.max(...numbers);
+  return (sizes.find((s) => longest >= s.minLongestSide) ?? sizes[sizes.length - 1]).key;
+}
+
+export function formatAmount(amount: number, currency?: string): string {
+  return new Intl.NumberFormat(site.locale, {
+    style: 'currency',
+    currency: currency ?? site.defaultCurrency,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
 export function formatPrice(data: CollectionEntry<'artworks'>['data']): string {
   if (data.status === 'sold') return 'Sold';
   if (data.price === undefined) return 'Price on request';
-  return new Intl.NumberFormat(site.locale, {
-    style: 'currency',
-    currency: data.currency ?? site.defaultCurrency,
-    maximumFractionDigits: 0,
-  }).format(data.price);
+  return formatAmount(data.price, data.currency);
 }
 
 async function responsive(
@@ -160,6 +174,7 @@ async function load(): Promise<Artwork[]> {
         data,
         mediumLabel: mediums[data.medium as Medium],
         priceLabel: formatPrice(data),
+        size: sizeOf(data.dimensions),
         aspect: first.width / first.height,
         cover,
         placeholder: placeholder.src,

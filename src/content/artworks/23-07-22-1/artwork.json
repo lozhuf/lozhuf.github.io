@@ -6,5 +6,6 @@
   "year": 2023,
   "price": 3000,
   "status": "available",
-  "order": 220
+  "order": 220,
+  "featured": true
 }

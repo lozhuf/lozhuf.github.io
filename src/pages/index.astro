@@ -1,11 +1,11 @@
 ---
 import Base from '../layouts/Base.astro';
-import Gallery from '../components/Gallery.astro';
+import Overview from '../components/Overview.astro';
 import { getArtworks } from '../lib/artworks';
 
 const artworks = await getArtworks();
 ---
 
 <Base image={artworks[0]?.ogImage}>
-  <Gallery artworks={artworks} />
+  <Overview artworks={artworks} />
 </Base>

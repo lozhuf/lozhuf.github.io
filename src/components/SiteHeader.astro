@@ -1,0 +1,47 @@
+---
+import { site } from '../site.config';
+import { url } from '../lib/url';
+import { categories, type Category } from '../lib/categories';
+import logo from '../assets/logo.svg';
+
+interface Props {
+  /** On a size page: which one, and how many pieces each size has. Shows the size links. */
+  current?: Category;
+  counts?: Record<Category, number>;
+}
+
+const { current, counts } = Astro.props;
+const links = counts ? categories.filter((c) => counts[c.key] > 0) : [];
+---
+
+<header class:list={['site-header', { 'site-header-compact': current }]}>
+  <a class="site-name" href={url()}>
+    <img src={logo.src} width={logo.width} height={logo.height} alt={site.name} />
+  </a>
+  {
+    current && counts && (
+      <nav class="size-nav" aria-label="Artwork by size">
+        {links.map((c) => (
+          <a class="size-link" href={url(c.key)} aria-current={c.key === current ? 'page' : undefined}>
+            {c.label} <span class="size-link-count">{counts[c.key]}</span>
+          </a>
+        ))}
+      </nav>
+    )
+  }
+  <nav class="site-nav" aria-label="Contact">
+    <a href={site.instagram} aria-label="Instagram" title="Instagram" rel="me noopener" target="_blank">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="5"></rect>
+        <circle cx="12" cy="12" r="4"></circle>
+        <circle cx="17.5" cy="6.5" r="0.6" class="fill"></circle>
+      </svg>
+    </a>
+    <a href={`mailto:${site.contactEmail}`} aria-label="Email" title="Email">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+        <path d="M3.5 6.5l8.5 6.5 8.5-6.5"></path>
+      </svg>
+    </a>
+  </nav>
+</header>

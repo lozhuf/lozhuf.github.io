@@ -1,0 +1,19 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../layouts/Base.astro';
+import Gallery from '../components/Gallery.astro';
+import { getArtworks } from '../lib/artworks';
+import { categories } from '../lib/categories';
+
+// /large, /medium, /small and /all
+export const getStaticPaths = (() =>
+  categories.map((c) => ({ params: { category: c.key }, props: { category: c } }))) satisfies GetStaticPaths;
+
+const { category } = Astro.props;
+const artworks = await getArtworks();
+const cover = artworks.find((a) => category.key === 'all' || a.size === category.key);
+---
+
+<Base title={category.title} image={cover?.ogImage}>
+  <Gallery artworks={artworks} category={category.key} />
+</Base>

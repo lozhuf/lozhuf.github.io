@@ -4,8 +4,8 @@ import Base from '../../layouts/Base.astro';
 import Gallery from '../../components/Gallery.astro';
 import { getArtworks } from '../../lib/artworks';
 
-// One page per artwork, e.g. /art/harbour-at-dusk. It shows the gallery with
-// that artwork's overlay already open, so shared links land in the right place.
+// One page per artwork, e.g. /art/harbour-at-dusk. It shows the gallery for the
+// artwork's size with its overlay already open, so shared links land in context.
 export const getStaticPaths = (async () => {
   const artworks = await getArtworks();
   return artworks.map((artwork) => ({ params: { id: artwork.id }, props: { artwork } }));
@@ -20,5 +20,5 @@ const description =
 ---
 
 <Base title={data.title} description={description} image={artwork.ogImage}>
-  <Gallery artworks={artworks} initial={artwork} />
+  <Gallery artworks={artworks} category={artwork.size} initial={artwork} />
 </Base>

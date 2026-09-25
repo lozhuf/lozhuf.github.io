@@ -7,5 +7,6 @@
   "price": 1500,
   "status": "available",
   "instagram": "https://www.instagram.com/p/C2LFtzPL1JB/",
-  "order": 180
+  "order": 180,
+  "featured": true
 }
