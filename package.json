@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "new": "node scripts/new-artwork.mjs",
-    "crop": "node tools/crop/server.mjs"
+    "crop": "node tools/crop/server.mjs",
+    "prices": "node tools/prices/server.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

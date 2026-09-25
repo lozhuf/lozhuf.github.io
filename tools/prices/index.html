@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Prices (private)</title>
+<style>
+  :root {
+    --bg: #f7f5f0; --panel: #fff; --ink: #1c1b19; --muted: #6f6b63; --line: #e0dbd1;
+    --up: #1d7a46; --down: #b3261e; --accent: #970000;
+    font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: var(--ink); background: var(--bg);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 32px 64px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .note { margin: 0 0 20px; color: var(--muted); }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 16px; }
+  .controls label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+  .controls label.check { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); }
+  input, select, button { font: inherit; color: inherit; }
+  input[type=number], select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; width: 110px; }
+  select#basis { width: 190px; }
+  .keep { margin-left: 6px; padding: 4px 8px; font-size: 12px; }
+  button { padding: 7px 14px; border: 1px solid var(--line); border-radius: 6px; background: #fff; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+  button:disabled { opacity: .4; cursor: default; }
+  .spacer { flex: 1; }
+  .summary { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0 0 12px; color: var(--muted); }
+  .summary b { color: var(--ink); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  th, td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  th { position: sticky; top: 0; background: #f0ece4; font-size: 12px; color: var(--muted); font-weight: 600; cursor: pointer; user-select: none; z-index: 1; }
+  th[data-sort]::after { content: ' ⇅'; opacity: .35; }
+  th.sorted-asc::after { content: ' ↑'; opacity: 1; }
+  th.sorted-desc::after { content: ' ↓'; opacity: 1; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.thumb { width: 56px; padding: 4px 8px; }
+  td.thumb img { display: block; width: 44px; height: 44px; object-fit: cover; border-radius: 3px; background: #eee; }
+  td.title { white-space: normal; min-width: 140px; }
+  td.title small { display: block; color: var(--muted); }
+  tr.sold td { color: var(--muted); }
+  tr.sold td.thumb img { opacity: .5; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; background: #f0ece4; }
+  .tag.paper { background: #eef1f5; }
+  .tag.sold { background: #f6e3e1; color: var(--down); }
+  td input[type=number] { width: 96px; text-align: right; }
+  td input.overridden { border-color: var(--accent); background: #fff6f5; }
+  .up { color: var(--up); }
+  .down { color: var(--down); }
+  .muted { color: var(--muted); }
+  .toast { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<h1>Prices</h1>
+<p class="note">Private to this computer; not part of the website. Suggested prices come from the formula below. To set one piece by hand, type a price in “New price”, or press <b>Keep</b> to hold its current price; hand-set prices stay until you clear the box. <b>Apply</b> writes the new prices into the artwork files, which then go live when you commit and push.</p>
+
+<div class="controls">
+  <label>Formula based on
+    <select id="basis">
+      <option value="linear">width + height (cm)</option>
+      <option value="area">width × height (cm²)</option>
+    </select>
+  </label>
+  <label><span id="rate-canvas-label">Canvas &amp; board, kr per cm</span>
+    <input id="rateCanvas" type="number" min="0" step="0.5" />
+  </label>
+  <label><span id="rate-paper-label">Paper, kr per cm</span>
+    <input id="ratePaper" type="number" min="0" step="0.5" />
+  </label>
+  <label>Round to nearest
+    <select id="round">
+      <option value="1">1 kr</option><option value="50">50 kr</option><option value="100">100 kr</option><option value="250">250 kr</option><option value="500">500 kr</option>
+    </select>
+  </label>
+  <label>Minimum price
+    <input id="minimum" type="number" min="0" step="50" />
+  </label>
+  <label class="check"><input id="hideSold" type="checkbox" /> Hide sold pieces</label>
+  <span class="spacer"></span>
+  <button id="csv">Download CSV</button>
+  <button id="reload" title="Re-read the artwork files">Refresh</button>
+  <button id="apply" class="primary">Apply new prices</button>
+</div>
+
+<div class="summary" id="summary"></div>
+
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th data-sort="title">Piece</th>
+      <th data-sort="size">Size</th>
+      <th data-sort="support">Support</th>
+      <th data-sort="current" class="num">Current</th>
+      <th data-sort="currentRate" class="num" id="rate-head">kr / cm now</th>
+      <th data-sort="suggested" class="num">Formula</th>
+      <th data-sort="next" class="num">New price</th>
+      <th data-sort="change" class="num">Change</th>
+    </tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const nf = new Intl.NumberFormat('da-DK');
+const kr = (n) => (n == null ? '—' : `${nf.format(Math.round(n))} kr.`);
+let artworks = [];
+let settings = {};
+let sort = { key: null, dir: 1 };
+
+const isPaper = (a) => /paper|papir/i.test(a.materials || '') && !/canvas|board|lærred/i.test(a.materials || '');
+const dims = (a) => (String(a.dimensions || '').match(/\d+(\.\d+)?/g) || []).map(Number);
+
+function basisOf(a) {
+  const [w, h] = dims(a);
+  if (!w || !h) return null;
+  return settings.basis === 'area' ? w * h : w + h;
+}
+
+function suggested(a) {
+  const b = basisOf(a);
+  if (b == null) return null;
+  const rate = isPaper(a) ? settings.ratePaper : settings.rateCanvas;
+  const step = Number(settings.round) || 1;
+  return Math.max(Number(settings.minimum) || 0, Math.round((b * rate) / step) * step);
+}
+
+function rowData(a) {
+  const override = settings.overrides[a.folder];
+  const s = suggested(a);
+  const next = override ?? s;
+  const b = basisOf(a);
+  return {
+    a, s, next, override,
+    current: a.price ?? null,
+    currentRate: a.price && b ? a.price / b : null,
+    change: a.price && next ? next / a.price - 1 : null,
+    title: a.title, size: b ?? 0, support: isPaper(a) ? 'paper' : 'canvas',
+    suggested: s, sold: a.status === 'sold',
+  };
+}
+
+function render() {
+  const unit = settings.basis === 'area' ? 'cm²' : 'cm';
+  $('rate-canvas-label').textContent = `Canvas & board, kr per ${unit}`;
+  $('rate-paper-label').textContent = `Paper, kr per ${unit}`;
+  $('rate-head').textContent = `kr / ${unit} now`;
+
+  let rows = artworks.map(rowData).filter((r) => !(settings.hideSold && r.sold));
+  if (sort.key) {
+    rows.sort((x, y) => {
+      const a = x[sort.key], b = y[sort.key];
+      if (a == null) return 1;
+      if (b == null) return -1;
+      return (typeof a === 'string' ? a.localeCompare(b) : a - b) * sort.dir;
+    });
+  }
+
+  const tbody = $('rows');
+  tbody.replaceChildren(...rows.map((r) => {
+    const tr = document.createElement('tr');
+    if (r.sold) tr.className = 'sold';
+    const change = r.change == null ? '<span class="muted">—</span>'
+      : `<span class="${r.change > 0.005 ? 'up' : r.change < -0.005 ? 'down' : 'muted'}">${r.change > 0 ? '+' : ''}${Math.round(r.change * 100)}%</span>`;
+    tr.innerHTML = `
+      <td class="thumb">${r.a.cover ? `<img src="/thumb?path=${encodeURIComponent(r.a.cover)}" alt="" loading="lazy">` : ''}</td>
+      <td class="title">${esc(r.a.title)}<small>${esc(r.a.materials || '')}</small></td>
+      <td>${esc(r.a.dimensions || '')}</td>
+      <td><span class="tag ${r.support}">${r.support}</span>${r.sold ? ' <span class="tag sold">sold</span>' : ''}</td>
+      <td class="num">${kr(r.current)}</td>
+      <td class="num muted">${r.currentRate == null ? '—' : nf.format(Math.round(r.currentRate * 10) / 10)}</td>
+      <td class="num">${kr(r.s)}</td>
+      <td class="num"></td>
+      <td class="num">${change}</td>`;
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '0';
+    input.step = '50';
+    input.placeholder = r.s ?? '';
+    input.value = r.override ?? '';
+    input.title = 'Leave empty to use the formula';
+    input.disabled = r.sold;
+    if (r.override != null) input.classList.add('overridden');
+    input.addEventListener('change', () => {
+      const v = input.value.trim();
+      if (v === '') delete settings.overrides[r.a.folder];
+      else settings.overrides[r.a.folder] = Math.round(Number(v));
+      save();
+      render();
+    });
+    tr.children[7].append(input);
+    if (!r.sold && r.current && r.next !== r.current) {
+      const keep = document.createElement('button');
+      keep.className = 'keep';
+      keep.textContent = 'Keep';
+      keep.title = 'Keep the current price for this piece';
+      keep.addEventListener('click', () => {
+        settings.overrides[r.a.folder] = r.current;
+        save();
+        render();
+      });
+      tr.children[7].append(keep);
+    }
+    return tr;
+  }));
+
+  const forSale = artworks.map(rowData).filter((r) => !r.sold);
+  const now = forSale.reduce((t, r) => t + (r.current || 0), 0);
+  const next = forSale.reduce((t, r) => t + (r.next || 0), 0);
+  const changed = forSale.filter((r) => r.next && r.next !== r.current).length;
+  $('summary').innerHTML = `
+    <span><b>${artworks.length}</b> pieces (${forSale.length} for sale)</span>
+    <span>For sale now: <b>${kr(now)}</b></span>
+    <span>With new prices: <b>${kr(next)}</b> ${now ? `(${next >= now ? '+' : ''}${Math.round((next / now - 1) * 100)}%)` : ''}</span>
+    <span><b>${changed}</b> would change</span>`;
+  $('apply').disabled = changed === 0;
+
+  document.querySelectorAll('th[data-sort]').forEach((th) => {
+    th.classList.toggle('sorted-asc', th.dataset.sort === sort.key && sort.dir === 1);
+    th.classList.toggle('sorted-desc', th.dataset.sort === sort.key && sort.dir === -1);
+  });
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+}
+
+let saveTimer;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) }), 300);
+}
+
+function bindControls() {
+  for (const id of ['basis', 'rateCanvas', 'ratePaper', 'round', 'minimum']) {
+    const el = $(id);
+    el.value = settings[id];
+    el.addEventListener('input', () => {
+      settings[id] = el.type === 'number' ? Number(el.value) : el.value;
+      save();
+      render();
+    });
+  }
+  $('hideSold').checked = settings.hideSold;
+  $('hideSold').addEventListener('change', () => { settings.hideSold = $('hideSold').checked; save(); render(); });
+}
+
+document.querySelectorAll('th[data-sort]').forEach((th) => th.addEventListener('click', () => {
+  sort = sort.key === th.dataset.sort ? { key: th.dataset.sort, dir: -sort.dir } : { key: th.dataset.sort, dir: 1 };
+  render();
+}));
+
+$('reload').addEventListener('click', () => load());
+
+$('apply').addEventListener('click', async () => {
+  const changes = artworks.map(rowData).filter((r) => !r.sold && r.next && r.next !== r.current)
+    .map((r) => ({ folder: r.a.folder, price: r.next }));
+  if (!confirm(`Write new prices for ${changes.length} piece${changes.length === 1 ? '' : 's'} into their artwork.json files?\n\nThey go live on the website after you commit and push.`)) return;
+  const res = await fetch('/api/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ changes }) });
+  const json = await res.json();
+  toast(res.ok ? `Updated ${json.applied.length} artwork file${json.applied.length === 1 ? '' : 's'}` : `Couldn't apply: ${json.error}`);
+  await load();
+});
+
+$('csv').addEventListener('click', () => {
+  const lines = [['Folder', 'Title', 'Dimensions', 'Materials', 'Status', 'Current price', 'Formula price', 'New price']];
+  for (const r of artworks.map(rowData)) {
+    lines.push([r.a.folder, r.a.title, r.a.dimensions, r.a.materials, r.a.status, r.current ?? '', r.s ?? '', r.next ?? '']);
+  }
+  const csv = lines.map((l) => l.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: 'prices.csv' });
+  a.click();
+});
+
+function toast(text) {
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+let bound = false;
+async function load() {
+  const data = await (await fetch('/api/data')).json();
+  artworks = data.artworks;
+  settings = data.settings;
+  if (!bound) { bindControls(); bound = true; }
+  render();
+}
+
+load();
+</script>
+</body>
+</html>

@@ -87,6 +87,20 @@ The Music videos page (`/music`, reached with the Artwork / Music videos buttons
 { "id": "7x3FBcNH5Ys", "title": "My Way", "artist": "Anti Atlas" }
 ```
 
+## Pricing table (private)
+
+```sh
+npm run prices
+```
+
+Opens a table of every artwork with its current price and a suggested price from a formula: kr per cm of width + height (or per cm² of area), with separate rates for canvas/board and for paper, rounding and a minimum. It reads the artwork files each time, so new pieces appear automatically.
+
+- Type a price in **New price** to set one piece by hand, or press **Keep** to hold its current price. Hand-set prices stay until you clear the box.
+- **Apply new prices** writes the prices into the `artwork.json` files; they go live when you commit and push.
+- **Download CSV** exports the table for a spreadsheet.
+
+It only runs on your computer and isn't part of the website. The formula and any hand-set prices are saved in `.prices-settings.json`, which isn't committed, so nothing is public until you apply and push.
+
 ## Settings
 
 `src/site.config.ts` holds your name, tagline, contact email, Instagram link, the currency and the purchase-form endpoint.
@@ -118,4 +132,5 @@ src/components/           Overview, Gallery, Tile, SiteHeader, ArtworkDetail, Bu
 src/scripts/gallery.ts    overlay animation, carousel, browsing, form
 src/styles/global.css     all styling; colours and fonts at the top
 tools/crop/               the photo straightening tool (npm run crop)
+tools/prices/             the private pricing table (npm run prices)
 ```
