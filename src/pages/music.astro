@@ -1,0 +1,13 @@
+---
+import Base from '../layouts/Base.astro';
+import MusicVideos from '../components/MusicVideos.astro';
+import videos from '../content/music-videos.json';
+---
+
+<Base
+  title="Music videos"
+  description={`Music videos by ${[...new Set(videos.map((v) => v.artist))].join(', ')}.`}
+  image={`https://i.ytimg.com/vi/${videos[0].id}/maxresdefault.jpg`}
+>
+  <MusicVideos />
+</Base>

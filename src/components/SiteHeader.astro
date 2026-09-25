@@ -8,9 +8,15 @@ interface Props {
   /** On a size page: which one, and how many pieces each size has. Shows the size links. */
   current?: Category;
   counts?: Record<Category, number>;
+  /** Show the Artwork / Music videos switch, with this one highlighted. */
+  section?: 'artwork' | 'music';
 }
 
-const { current, counts } = Astro.props;
+const { current, counts, section } = Astro.props;
+const sections = [
+  { key: 'artwork', label: 'Artwork', href: url() },
+  { key: 'music', label: 'Music videos', href: url('music') },
+];
 const links = counts ? categories.filter((c) => counts[c.key] > 0) : [];
 ---
 
@@ -24,6 +30,17 @@ const links = counts ? categories.filter((c) => counts[c.key] > 0) : [];
         {links.map((c) => (
           <a class="size-link" href={url(c.key)} aria-current={c.key === current ? 'page' : undefined}>
             {c.label} <span class="size-link-count">{counts[c.key]}</span>
+          </a>
+        ))}
+      </nav>
+    )
+  }
+  {
+    section && (
+      <nav class="size-nav" aria-label="Sections">
+        {sections.map((s) => (
+          <a class="size-link" href={s.href} aria-current={s.key === section ? 'page' : undefined}>
+            {s.label}
           </a>
         ))}
       </nav>

@@ -1,0 +1,94 @@
+---
+import videos from '../content/music-videos.json';
+import SiteHeader from './SiteHeader.astro';
+import SiteFooter from './SiteFooter.astro';
+---
+
+<SiteHeader section="music" />
+
+<main class="music">
+  <ul class="videos">
+    {
+      videos.map((v, i) => (
+        <li class="video">
+          {/* A thumbnail that opens the video in a large player overlay (see script below).
+              Without JavaScript it's a plain link to the video on YouTube. */}
+          <a
+            class="video-frame"
+            href={`https://www.youtube.com/watch?v=${v.id}`}
+            data-video={v.id}
+            data-title={v.title}
+            data-artist={v.artist}
+            aria-label={`Play ${v.title} by ${v.artist}`}
+          >
+            <img
+              src={`https://i.ytimg.com/vi/${v.id}/maxresdefault.jpg`}
+              width="1280"
+              height="720"
+              alt=""
+              loading={i < 4 ? 'eager' : 'lazy'}
+              decoding="async"
+            />
+            <span class="video-play" aria-hidden="true" />
+          </a>
+          <h2 class="video-title">{v.title}</h2>
+          <p class="video-artist">{v.artist}</p>
+        </li>
+      ))
+    }
+  </ul>
+</main>
+
+<SiteFooter />
+
+<dialog class="video-overlay" aria-label="Music video">
+  <button type="button" class="video-overlay-close" aria-label="Close">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+  </button>
+  <div class="video-overlay-body">
+    <div class="video-overlay-player"></div>
+    <p class="video-overlay-caption">
+      <span class="video-overlay-title"></span>
+      <span class="video-overlay-artist"></span>
+    </p>
+  </div>
+</dialog>
+
+<script>
+  // Clicking a thumbnail opens the video in a large overlay. The YouTube player
+  // is only created then (and removed on close, which stops playback), so the
+  // page doesn't load thirteen players up front.
+  const overlay = document.querySelector<HTMLDialogElement>('.video-overlay')!;
+  const player = overlay.querySelector<HTMLElement>('.video-overlay-player')!;
+  const titleEl = overlay.querySelector<HTMLElement>('.video-overlay-title')!;
+  const artistEl = overlay.querySelector<HTMLElement>('.video-overlay-artist')!;
+
+  function open(link: HTMLAnchorElement) {
+    const { video, title = 'Music video', artist = '' } = link.dataset;
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0&playsinline=1`;
+    iframe.title = `${title}${artist ? ` by ${artist}` : ''}`;
+    iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    iframe.allowFullscreen = true;
+    player.replaceChildren(iframe);
+    titleEl.textContent = title;
+    artistEl.textContent = artist;
+    overlay.setAttribute('aria-label', iframe.title);
+    overlay.showModal();
+  }
+
+  document.addEventListener('click', (event) => {
+    const link = (event.target as Element).closest<HTMLAnchorElement>('a[data-video]');
+    if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    open(link);
+  });
+
+  overlay.querySelector('.video-overlay-close')!.addEventListener('click', () => overlay.close());
+  // Clicking the dark area around the player closes it too.
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay || event.target === overlay.querySelector('.video-overlay-body')) overlay.close();
+  });
+  // Removing the player stops the video (Esc closes the dialog natively).
+  overlay.addEventListener('close', () => player.replaceChildren());
+</script>

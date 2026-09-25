@@ -117,9 +117,9 @@ h3 {
   gap: 8px;
 }
 
-/* Narrow screens: logo and icons on top, size links on their own row below. */
+/* Narrow screens: logo and icons on top, header links on their own row below. */
 @media (max-width: 760px) {
-  .site-header-compact {
+  .site-header {
     flex-wrap: wrap;
   }
 
@@ -357,6 +357,203 @@ h3 {
 .pill-button:hover {
   background: var(--ink);
   color: var(--bg);
+}
+
+/* ---------------------------------------------------------------------------
+   Music videos page
+--------------------------------------------------------------------------- */
+.music {
+  padding: 0 var(--page-pad);
+}
+
+.videos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--gap) * 1.5) var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 1600px) {
+  .videos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .videos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.video-frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  background: #000;
+  box-shadow:
+    0 2px 4px rgb(28 27 25 / 0.14),
+    0 12px 24px -8px rgb(28 27 25 / 0.35);
+}
+
+.video-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s;
+}
+
+.video-frame:hover img {
+  opacity: 0.85;
+}
+
+/* Round play button in the middle of each thumbnail. */
+.video-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.55);
+  transition:
+    background-color 0.2s,
+    transform 0.2s var(--ease);
+}
+
+.video-play::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 12px 0 12px 20px;
+  border-color: transparent transparent transparent #fff;
+  transform: translateX(3px);
+}
+
+.video-frame:hover .video-play,
+.video-frame:focus-visible .video-play {
+  background: #970000;
+  transform: scale(1.06);
+}
+
+.video-title {
+  margin: 12px 0 0;
+  font-size: 18px;
+}
+
+.video-artist {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Large player overlay: the video as big as the screen allows, at 16:9. */
+.video-overlay {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #0c0c0b;
+  color: #f7f5f0;
+}
+
+.video-overlay[open] {
+  display: grid;
+  animation: video-overlay-in 0.25s var(--ease);
+}
+
+.video-overlay::backdrop {
+  background: transparent;
+}
+
+@keyframes video-overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.video-overlay-body {
+  display: grid;
+  place-content: center;
+  justify-items: start;
+  padding: 64px clamp(16px, 4vw, 56px) 32px;
+}
+
+.video-overlay-player {
+  --w: min(calc(100vw - 2 * clamp(16px, 4vw, 56px)), calc((100vh - 170px) * 16 / 9));
+  width: var(--w);
+  aspect-ratio: 16 / 9;
+  background: #000;
+  box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.8);
+}
+
+.video-overlay-player iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-overlay-caption {
+  display: flex;
+  flex-direction: column;
+  margin: 14px 0 0;
+}
+
+.video-overlay-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.video-overlay-artist {
+  color: rgb(247 245 240 / 0.6);
+  font-size: 14px;
+}
+
+.video-overlay-close {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.2s var(--ease);
+}
+
+.video-overlay-close:hover {
+  background: rgb(255 255 255 / 0.22);
+  transform: rotate(90deg);
+}
+
+.video-overlay-close svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+html:has(.video-overlay[open]) {
+  overflow: hidden;
 }
 
 /* ---------------------------------------------------------------------------

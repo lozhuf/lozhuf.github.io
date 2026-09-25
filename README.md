@@ -60,6 +60,7 @@ To add a medium, add a line to `mediums` in `src/site.config.ts`.
 - `/large`, `/medium`, `/small`: the pieces of that size, with sold pieces of that size at the bottom
 - `/all`: every piece
 - `/art/<folder-name>`: a single piece, opened over the gallery for its size
+- `/music`: music videos
 
 Sizes are worked out from the area in `dimensions` (width × height): 2,500 cm² or more is large (about 50 × 50 cm and up), 950 cm² or more is medium (about 31 × 31 cm and up), anything smaller is small. The limits and labels are in `sizes` in `src/site.config.ts`.
 
@@ -77,6 +78,14 @@ It opens in your browser. Pick a photo on the left, drag the four red corners on
 - **Undo**: the first time a photo is edited, the original is copied to `.crop-backups/` (not committed to git). **Undo edits** restores it. Edited photos have a green dot.
 
 Stop the tool with `Ctrl+C` in the terminal, then commit the changed photos as usual.
+
+## Music videos
+
+The Music videos page (`/music`, reached with the Artwork / Music videos buttons in the home page header) shows the videos listed in `src/content/music-videos.json`, in that order. To add one, add a line with its YouTube id (the part after `watch?v=` in the video's address), a title and the artist:
+
+```json
+{ "id": "7x3FBcNH5Ys", "title": "My Way", "artist": "Anti Atlas" }
+```
 
 ## Settings
 
