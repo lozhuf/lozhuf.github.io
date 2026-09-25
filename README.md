@@ -65,6 +65,21 @@ To add a medium, add a line to `mediums` in `src/site.config.ts`. To add a set o
 
 Sizes are worked out from `dimensions` using the longest side: over 60 cm is large, 31–60 cm medium, 30 cm and under small. The limits and labels are in `sizes` in `src/site.config.ts`.
 
+## Straightening and cropping photos
+
+Photos taken at a slight angle can be straightened with the built-in tool:
+
+```sh
+npm run crop
+```
+
+It opens in your browser. Pick a photo on the left, drag the four red corners onto the corners of the artwork (a magnifier appears while you drag; keys `1`–`4` or `Tab` pick a corner and the arrow keys nudge it, `Shift` for bigger steps), choose the proportions, and press **OK**. The photo is straightened into a rectangle, cropped to the corners and saved over the original. Nothing else about the image is changed; JPEGs are re-saved at 95% quality.
+
+- **Proportions**: "Match the corners" keeps the shape you marked; "Artwork size" uses the piece's real dimensions from `artwork.json`, so a 40 × 60 cm painting comes out at exactly 2:3.
+- **Undo**: the first time a photo is edited, the original is copied to `.crop-backups/` (not committed to git). **Undo edits** restores it. Edited photos have a green dot.
+
+Stop the tool with `Ctrl+C` in the terminal, then commit the changed photos as usual.
+
 ## Settings
 
 `src/site.config.ts` holds your name, tagline, contact email, Instagram link, the currency and the purchase-form endpoint.
@@ -95,4 +110,5 @@ src/content.config.ts     the artwork.json schema
 src/components/           Overview, Gallery, Tile, SiteHeader, ArtworkDetail, BuyForm
 src/scripts/gallery.ts    overlay animation, carousel, browsing, form
 src/styles/global.css     all styling; colours and fonts at the top
+tools/crop/               the photo straightening tool (npm run crop)
 ```

@@ -8,7 +8,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "new": "node scripts/new-artwork.mjs"
+    "new": "node scripts/new-artwork.mjs",
+    "crop": "node tools/crop/server.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

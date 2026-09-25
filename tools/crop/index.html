@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Crop &amp; straighten</title>
+<style>
+  :root {
+    --bg: #1b1b1a;
+    --panel: #252523;
+    --line: #3a3a37;
+    --ink: #eeeae2;
+    --muted: #9b968c;
+    --accent: #ff5a4f;
+    font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; height: 100vh; display: grid; grid-template-columns: 280px 1fr; overflow: hidden; }
+
+  aside { border-right: 1px solid var(--line); background: var(--panel); overflow-y: auto; }
+  aside h1 { font-size: 15px; margin: 0; padding: 16px; border-bottom: 1px solid var(--line); }
+  .folder { padding: 12px 16px 4px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .thumbs { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 16px 12px; }
+  .thumb { position: relative; width: 58px; height: 58px; padding: 0; border: 2px solid transparent; border-radius: 4px; background: #111 center/contain no-repeat; cursor: pointer; }
+  .thumb[aria-current='true'] { border-color: var(--accent); }
+  .thumb.edited::after { content: ''; position: absolute; right: 3px; top: 3px; width: 8px; height: 8px; border-radius: 50%; background: #4fd18b; box-shadow: 0 0 0 2px #000; }
+
+  main { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; }
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .toolbar .name { font-weight: 600; margin-right: auto; }
+  .toolbar .name small { color: var(--muted); font-weight: 400; margin-left: 8px; }
+  select, button { font: inherit; color: var(--ink); background: #33332f; border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; }
+  button { cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--muted); }
+  button:disabled { opacity: .4; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; padding: 6px 22px; }
+  .size { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .stage { position: relative; overflow: hidden; display: grid; place-items: center; padding: 32px; }
+  .canvas { position: relative; }
+  .canvas img { display: block; user-select: none; -webkit-user-drag: none; }
+  .canvas svg { position: absolute; inset: 0; overflow: visible; touch-action: none; }
+  .shade { fill: rgb(0 0 0 / .45); fill-rule: evenodd; pointer-events: none; }
+  .edge { fill: none; stroke: var(--accent); stroke-width: 1.5; pointer-events: none; }
+  .handle { cursor: grab; }
+  .handle circle.ring { fill: rgb(255 90 79 / .25); stroke: #fff; stroke-width: 2; }
+  .handle circle.dot { fill: #fff; }
+  .handle.active circle.ring { fill: rgb(255 90 79 / .55); }
+  .handle:active { cursor: grabbing; }
+  .loupe { position: absolute; width: 180px; height: 180px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 6px 24px rgb(0 0 0 / .6); pointer-events: none; display: none; background: #000; }
+
+  footer { padding: 8px 16px; color: var(--muted); border-top: 1px solid var(--line); font-size: 12px; }
+  kbd { font: 11px ui-monospace, monospace; padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; }
+  .toast { position: fixed; left: 50%; bottom: 48px; transform: translateX(-50%); background: #111; border: 1px solid var(--line); padding: 10px 18px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .empty { color: var(--muted); }
+</style>
+</head>
+<body>
+<aside>
+  <h1>Crop &amp; straighten</h1>
+  <div id="list"></div>
+</aside>
+<main>
+  <div class="toolbar">
+    <div class="name" id="name">Choose an image</div>
+    <label>Proportions
+      <select id="aspect"></select>
+    </label>
+    <span class="size" id="size"></span>
+    <button id="reset" disabled>Reset corners</button>
+    <button id="undo" disabled title="Restore the original photo">Undo edits</button>
+    <button id="ok" class="primary" disabled>OK</button>
+  </div>
+  <div class="stage" id="stage">
+    <p class="empty">Pick a photo on the left.</p>
+  </div>
+  <footer>
+    Drag the four red corners onto the corners of the artwork.
+    <kbd>1</kbd>–<kbd>4</kbd> or <kbd>Tab</kbd> select a corner, arrow keys nudge it (<kbd>Shift</kbd> for 10 px).
+    OK straightens and crops the photo and saves it over the original; the first original is kept so Undo can restore it.
+  </footer>
+</main>
+<canvas class="loupe" id="loupe" width="360" height="360"></canvas>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const listEl = $('list'), stage = $('stage'), nameEl = $('name'), sizeEl = $('size');
+const aspectEl = $('aspect'), okBtn = $('ok'), resetBtn = $('reset'), undoBtn = $('undo');
+const loupe = $('loupe'), loupeCtx = loupe.getContext('2d');
+
+let images = [];
+let current = null;       // entry from /api/images
+let img = null;           // <img> being edited
+let scale = 1;            // displayed px per natural px
+let points = [];          // 4 × [x, y] in natural pixels
+let active = 0;           // selected corner
+let svg, shade, edge, handles = [];
+
+const LABELS = ['top left', 'top right', 'bottom right', 'bottom left'];
+
+// ---------------------------------------------------------------- list
+
+async function loadList(keepPath) {
+  images = await (await fetch('/api/images')).json();
+  listEl.replaceChildren();
+  let folder = null, row;
+  for (const entry of images) {
+    if (entry.folder !== folder) {
+      folder = entry.folder;
+      const h = document.createElement('div');
+      h.className = 'folder';
+      h.textContent = `${entry.title}${entry.dimensions ? ' · ' + entry.dimensions : ''}`;
+      row = document.createElement('div');
+      row.className = 'thumbs';
+      listEl.append(h, row);
+    }
+    const b = document.createElement('button');
+    b.className = 'thumb' + (entry.hasBackup ? ' edited' : '');
+    b.title = `${entry.path}${entry.hasBackup ? ' (edited)' : ''}`;
+    b.style.backgroundImage = `url("/image?thumb&path=${encodeURIComponent(entry.path)}&v=${entry.version}")`;
+    b.dataset.path = entry.path;
+    b.setAttribute('aria-current', String(entry.path === keepPath));
+    b.addEventListener('click', () => open(entry.path));
+    row.append(b);
+  }
+}
+
+// ---------------------------------------------------------------- editor
+
+function open(path) {
+  current = images.find((e) => e.path === path);
+  if (!current) return;
+  for (const b of listEl.querySelectorAll('.thumb')) b.setAttribute('aria-current', String(b.dataset.path === path));
+  nameEl.innerHTML = '';
+  nameEl.append(current.title);
+  const small = document.createElement('small');
+  small.textContent = current.path;
+  nameEl.append(small);
+  undoBtn.disabled = !current.hasBackup;
+  setupAspect();
+
+  img = new Image();
+  img.onload = () => { layout(); resetPoints(); };
+  img.src = `/image?path=${encodeURIComponent(path)}&v=${current.version}`;
+}
+
+function setupAspect() {
+  const dims = (current.dimensions.match(/\d+(\.\d+)?/g) || []).map(Number);
+  const options = [['corners', 'Match the corners']];
+  if (dims.length >= 2) {
+    options.push(['dims', `Artwork size (${dims[0]} × ${dims[1]} cm)`]);
+    options.push(['dims-rot', `Artwork size turned (${dims[1]} × ${dims[0]} cm)`]);
+  }
+  aspectEl.replaceChildren(...options.map(([v, t]) => new Option(t, v)));
+  aspectEl.dims = dims;
+}
+
+function layout() {
+  const box = stage.getBoundingClientRect();
+  const maxW = box.width - 64, maxH = box.height - 64;
+  scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1);
+  const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
+  img.width = w;
+  img.height = h;
+
+  const canvas = document.createElement('div');
+  canvas.className = 'canvas';
+  svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', h);
+  shade = document.createElementNS(svg.namespaceURI, 'path');
+  shade.setAttribute('class', 'shade');
+  edge = document.createElementNS(svg.namespaceURI, 'polygon');
+  edge.setAttribute('class', 'edge');
+  svg.append(shade, edge);
+  handles = [0, 1, 2, 3].map((i) => {
+    const g = document.createElementNS(svg.namespaceURI, 'g');
+    g.setAttribute('class', 'handle');
+    g.setAttribute('aria-label', LABELS[i]);
+    g.innerHTML = '<circle class="ring" r="11"/><circle class="dot" r="1.6"/>';
+    g.addEventListener('pointerdown', (e) => startDrag(e, i));
+    svg.append(g);
+    return g;
+  });
+  canvas.append(img, svg);
+  stage.replaceChildren(canvas);
+  [okBtn, resetBtn].forEach((b) => (b.disabled = false));
+}
+
+function resetPoints() {
+  const w = img.naturalWidth, h = img.naturalHeight, m = 0.06;
+  points = [[w * m, h * m], [w * (1 - m), h * m], [w * (1 - m), h * (1 - m)], [w * m, h * (1 - m)]];
+  active = 0;
+  draw();
+}
+
+/** Put the corners in order (top-left, top-right, bottom-right, bottom-left). */
+function ordered() {
+  const cx = points.reduce((s, p) => s + p[0], 0) / 4;
+  const cy = points.reduce((s, p) => s + p[1], 0) / 4;
+  const byAngle = [...points].sort((a, b) => Math.atan2(a[1] - cy, a[0] - cx) - Math.atan2(b[1] - cy, b[0] - cx));
+  const start = byAngle.reduce((best, p, i) => (p[0] + p[1] < byAngle[best][0] + byAngle[best][1] ? i : best), 0);
+  return [0, 1, 2, 3].map((k) => byAngle[(start + k) % 4]);
+}
+
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+
+function outputSize() {
+  const [tl, tr, br, bl] = ordered();
+  let W = (dist(tl, tr) + dist(bl, br)) / 2;
+  let H = (dist(tl, bl) + dist(tr, br)) / 2;
+  const [dw, dh] = aspectEl.dims || [];
+  if (aspectEl.value === 'dims') H = W * (dh / dw);
+  if (aspectEl.value === 'dims-rot') H = W * (dw / dh);
+  return [Math.round(W), Math.round(H)];
+}
+
+function draw() {
+  const d = points.map(([x, y]) => [x * scale, y * scale]);
+  const quad = ordered().map(([x, y]) => `${x * scale},${y * scale}`).join(' ');
+  edge.setAttribute('points', quad);
+  const w = img.width, h = img.height;
+  shade.setAttribute('d', `M0 0H${w}V${h}H0Z M${quad.split(' ').join(' L')}Z`);
+  handles.forEach((g, i) => {
+    g.setAttribute('transform', `translate(${d[i][0]} ${d[i][1]})`);
+    g.classList.toggle('active', i === active);
+  });
+  const [W, H] = outputSize();
+  sizeEl.textContent = `Output ${W} × ${H} px`;
+}
+
+// ---------------------------------------------------------------- dragging
+
+function startDrag(e, i) {
+  e.preventDefault();
+  active = i;
+  const g = handles[i];
+  g.setPointerCapture(e.pointerId);
+  const rect = svg.getBoundingClientRect();
+  const move = (ev) => {
+    const x = Math.min(img.naturalWidth, Math.max(0, (ev.clientX - rect.left) / scale));
+    const y = Math.min(img.naturalHeight, Math.max(0, (ev.clientY - rect.top) / scale));
+    points[i] = [x, y];
+    draw();
+    showLoupe(i);
+  };
+  const up = () => {
+    g.removeEventListener('pointermove', move);
+    g.removeEventListener('pointerup', up);
+    g.removeEventListener('pointercancel', up);
+    hideLoupe();
+  };
+  g.addEventListener('pointermove', move);
+  g.addEventListener('pointerup', up);
+  g.addEventListener('pointercancel', up);
+  draw();
+  showLoupe(i);
+}
+
+/** Magnified view around a corner, at 3× the photo's real resolution. */
+function showLoupe(i) {
+  const [x, y] = points[i];
+  const zoom = 3, size = loupe.width, half = size / 2 / zoom;
+  loupeCtx.imageSmoothingEnabled = false;
+  loupeCtx.fillStyle = '#000';
+  loupeCtx.fillRect(0, 0, size, size);
+  loupeCtx.drawImage(img, x - half, y - half, half * 2, half * 2, 0, 0, size, size);
+  loupeCtx.strokeStyle = '#ff5a4f';
+  loupeCtx.lineWidth = 2;
+  loupeCtx.beginPath();
+  loupeCtx.moveTo(size / 2, 0); loupeCtx.lineTo(size / 2, size);
+  loupeCtx.moveTo(0, size / 2); loupeCtx.lineTo(size, size / 2);
+  loupeCtx.stroke();
+  // Place the loupe away from the corner, towards the middle of the photo.
+  const r = svg.getBoundingClientRect();
+  const px = r.left + x * scale, py = r.top + y * scale;
+  const dx = x < img.naturalWidth / 2 ? 40 : -220;
+  const dy = y < img.naturalHeight / 2 ? 40 : -220;
+  loupe.style.left = `${px + dx}px`;
+  loupe.style.top = `${py + dy}px`;
+  loupe.style.display = 'block';
+}
+
+let loupeTimer;
+function hideLoupe(delay = 0) {
+  clearTimeout(loupeTimer);
+  loupeTimer = setTimeout(() => (loupe.style.display = 'none'), delay);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (!img || e.target.closest('select')) return;
+  if (/^[1-4]$/.test(e.key)) { active = Number(e.key) - 1; draw(); showLoupe(active); hideLoupe(900); return; }
+  if (e.key === 'Tab') { e.preventDefault(); active = (active + (e.shiftKey ? 3 : 1)) % 4; draw(); showLoupe(active); hideLoupe(900); return; }
+  const step = e.shiftKey ? 10 : 1;
+  const move = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+  if (!move) return;
+  e.preventDefault();
+  const [x, y] = points[active];
+  points[active] = [
+    Math.min(img.naturalWidth, Math.max(0, x + move[0])),
+    Math.min(img.naturalHeight, Math.max(0, y + move[1])),
+  ];
+  draw();
+  showLoupe(active);
+  hideLoupe(900);
+});
+
+// ---------------------------------------------------------------- actions
+
+aspectEl.addEventListener('change', () => img && draw());
+resetBtn.addEventListener('click', resetPoints);
+window.addEventListener('resize', () => {
+  if (!img) return;
+  const keep = points;
+  layout();
+  points = keep;
+  draw();
+});
+
+async function post(url, data) {
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || res.statusText);
+  return json;
+}
+
+okBtn.addEventListener('click', async () => {
+  const [width, height] = outputSize();
+  okBtn.disabled = true;
+  okBtn.textContent = 'Saving…';
+  try {
+    await post('/api/warp', { path: current.path, corners: ordered(), width, height });
+    toast(`Saved ${current.file} (${width} × ${height})`);
+    await loadList(current.path);
+    open(current.path);
+  } catch (err) {
+    toast(`Couldn't save: ${err.message}`);
+  } finally {
+    okBtn.disabled = false;
+    okBtn.textContent = 'OK';
+  }
+});
+
+undoBtn.addEventListener('click', async () => {
+  if (!confirm(`Restore the original ${current.file}? Your edits to it will be lost.`)) return;
+  try {
+    await post('/api/undo', { path: current.path });
+    toast(`Restored the original ${current.file}`);
+    await loadList(current.path);
+    open(current.path);
+  } catch (err) {
+    toast(`Couldn't restore: ${err.message}`);
+  }
+});
+
+function toast(text) {
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+loadList();
+</script>
+</body>
+</html>
