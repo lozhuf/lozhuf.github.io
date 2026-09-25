@@ -121,15 +121,9 @@ function createCarousel(root: HTMLElement): Carousel | null {
   };
 }
 
-/** Artwork ids in gallery order, for the visible tiles (a set's tile expands to all its pieces). */
+/** Artwork ids of the visible tiles, in gallery order. */
 function sequence(): string[] {
-  return tiles.filter((t) => !t.hidden).flatMap((t) => (t.dataset.members || t.dataset.id!).split(' '));
-}
-
-/** The tile showing an artwork: its own tile, or the tile of the set it belongs to. */
-function tileFor(id: string | null): HTMLElement | undefined {
-  if (!id) return undefined;
-  return tiles.find((t) => t.dataset.id === id || (t.dataset.members ?? '').split(' ').includes(id));
+  return tiles.filter((t) => !t.hidden).map((t) => t.dataset.id!);
 }
 
 /** The visible artwork before (-1) or after (1) the open one, in gallery order. */
@@ -166,7 +160,7 @@ async function switchArtwork(id: string, direction: number, fromButton: boolean)
     carousel?.sync();
     history.replaceState({ artwork: id }, '', artworkUrl(id));
     // Keep the tile in view behind the overlay, so closing can animate back to it.
-    tileFor(id)?.scrollIntoView({ block: 'center' });
+    tiles.find((t) => t.dataset.id === id)?.scrollIntoView({ block: 'center' });
     const fresh = overlayBody.querySelector('.detail');
     if (fresh) {
       await fresh.animate(

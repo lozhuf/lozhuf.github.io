@@ -49,12 +49,10 @@ This creates `src/content/artworks/harbour-at-dusk/artwork.json`. Then:
 | `alt` | no | Description of the main image for screen readers. Defaults to the title. |
 | `order` | no | Position in the gallery, lowest first. Existing pieces are numbered 10, 20, 30… in the order of the original Google Doc, so use e.g. `5` to put a new piece first or `25` to slot it between the 2nd and 3rd. Pieces without `order` appear after all numbered ones, newest first. |
 | `instagram` | no | Link to the Instagram post; shown as "View on Instagram". |
-| `featured` | no | `true` to use the piece as one of the example images on the home page's Large / Medium / Small cards (up to three per size, featured pieces first). |
-| `group` | no | Put similar pieces into one gallery tile, e.g. `"small-studies"` or `"charcoal-sketches"`. The sets are named in `groups` in `src/site.config.ts`. Each piece can still be opened and bought on its own. |
 
 The folder name becomes the page address: `/art/harbour-at-dusk`. If a field is misspelled or has the wrong type, `npm run dev` / `npm run build` stops and names the field.
 
-To add a medium, add a line to `mediums` in `src/site.config.ts`. To add a set of pieces, add it to `groups` there.
+To add a medium, add a line to `mediums` in `src/site.config.ts`.
 
 ## Site structure
 
@@ -63,7 +61,7 @@ To add a medium, add a line to `mediums` in `src/site.config.ts`. To add a set o
 - `/all`: every piece
 - `/art/<folder-name>`: a single piece, opened over the gallery for its size
 
-Sizes are worked out from `dimensions` using the longest side: over 60 cm is large, 31–60 cm medium, 30 cm and under small. The limits and labels are in `sizes` in `src/site.config.ts`.
+Sizes are worked out from the area in `dimensions` (width × height): 2,500 cm² or more is large (about 50 × 50 cm and up), 950 cm² or more is medium (about 31 × 31 cm and up), anything smaller is small. The limits and labels are in `sizes` in `src/site.config.ts`.
 
 ## Straightening and cropping photos
 

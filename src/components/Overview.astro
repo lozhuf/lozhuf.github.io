@@ -20,15 +20,12 @@ const currency = new Intl.NumberFormat(site.locale, {
   maximumFractionDigits: 0,
 });
 
-// One card per size: a small stack of example pieces (featured ones first), with
-// how many there are and the price range.
+// One card per size: a small stack of its first few pieces, with how many
+// there are and the price range.
 const cards = sizes
   .map((size) => {
     const pieces = forSale.filter((a) => a.size === size.key);
-    const examples = [
-      ...pieces.filter((a) => a.data.featured),
-      ...pieces.filter((a) => !a.data.featured),
-    ].slice(0, 3);
+    const examples = pieces.slice(0, 3);
     const prices = pieces.map((a) => a.data.price).filter((p): p is number => p !== undefined);
     const min = Math.min(...prices);
     const max = Math.max(...prices);

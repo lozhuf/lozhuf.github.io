@@ -41,22 +41,13 @@ export type Medium = keyof typeof mediums;
 
 /**
  * Size categories, each with its own page (/large, /medium, /small), worked out
- * from each artwork's "dimensions" using its longest side in cm.
+ * from each artwork's "dimensions" by area (width × height in cm²).
+ * 2,500 cm² is about 50 × 50 cm; 950 cm² is about 31 × 31 cm.
  */
 export const sizes = [
-  { key: 'large', label: 'Large', description: 'Over 60 cm', minLongestSide: 61 },
-  { key: 'medium', label: 'Medium', description: '31–60 cm', minLongestSide: 31 },
-  { key: 'small', label: 'Small', description: 'Up to 30 cm', minLongestSide: 0 },
+  { key: 'large', label: 'Large', description: 'From about 50 × 50 cm', minArea: 2500 },
+  { key: 'medium', label: 'Medium', description: 'From about 31 × 31 cm', minArea: 950 },
+  { key: 'small', label: 'Small', description: 'Under about 31 × 31 cm', minArea: 0 },
 ] as const;
 
 export type Size = (typeof sizes)[number]['key'];
-
-/**
- * Sets of similar pieces shown as a single tile in the gallery. Put an artwork
- * in a set by adding e.g. "group": "small-studies" to its artwork.json.
- * Each piece can still be opened and bought on its own.
- */
-export const groups: Record<string, { title: string }> = {
-  'small-studies': { title: 'Small studies' },
-  'charcoal-sketches': { title: 'Charcoal sketches' },
-};

@@ -1,7 +1,7 @@
 ---
-import { formatAmount, type Artwork } from '../lib/artworks';
+import type { Artwork } from '../lib/artworks';
 import { categories, categoryCounts, inCategory, type Category } from '../lib/categories';
-import { groups, site } from '../site.config';
+import { site } from '../site.config';
 import { url } from '../lib/url';
 import Tile from './Tile.astro';
 import ArtworkDetail from './ArtworkDetail.astro';
@@ -24,35 +24,6 @@ const shown = artworks.filter((a) => inCategory(a, category));
 // Sold pieces get their own section below everything that's still for sale.
 const forSale = shown.filter((a) => a.data.status !== 'sold');
 const sold = shown.filter((a) => a.data.status === 'sold');
-
-// Pieces in the same group (e.g. "small-studies") share one tile, placed where
-// the group's first piece would be.
-type Item =
-  | { kind: 'art'; artwork: Artwork }
-  | { kind: 'group'; key: string; members: Artwork[] };
-const items: Item[] = [];
-const groupItems = new Map<string, Extract<Item, { kind: 'group' }>>();
-for (const artwork of forSale) {
-  const key = artwork.data.group;
-  if (!key) {
-    items.push({ kind: 'art', artwork });
-    continue;
-  }
-  let item = groupItems.get(key);
-  if (!item) {
-    item = { kind: 'group', key, members: [] };
-    groupItems.set(key, item);
-    items.push(item);
-  }
-  item.members.push(artwork);
-}
-
-function groupPrice(members: Artwork[]): string {
-  const prices = members.map((m) => m.data.price).filter((p): p is number => p !== undefined);
-  if (prices.length === 0) return 'Price on request';
-  const min = Math.min(...prices);
-  return prices.every((p) => p === min) ? `${formatAmount(min)} each` : `From ${formatAmount(min)}`;
-}
 ---
 
 <SiteHeader current={category} counts={categoryCounts(artworks)} />
@@ -60,23 +31,7 @@ function groupPrice(members: Artwork[]): string {
 <main class="gallery">
   <section class="gallery-section" aria-label="Available">
     <ul class="grid">
-      {
-        items.map((item, i) =>
-          item.kind === 'art' || item.members.length === 1 ? (
-            <Tile artwork={item.kind === 'art' ? item.artwork : item.members[0]} eager={i < 6} />
-          ) : (
-            <Tile
-              artwork={item.members[0]}
-              eager={i < 6}
-              group={{
-                title: groups[item.key].title,
-                members: item.members,
-                priceLabel: groupPrice(item.members),
-              }}
-            />
-          ),
-        )
-      }
+      {forSale.map((a, i) => <Tile artwork={a} eager={i < 6} />)}
     </ul>
   </section>
   {

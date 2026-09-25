@@ -5,22 +5,17 @@ import { url } from '../lib/url';
 interface Props {
   artwork: Artwork;
   eager?: boolean;
-  /** Show this tile as a set of pieces; `artwork` is the set's first piece. */
-  group?: { title: string; members: Artwork[]; priceLabel: string };
 }
 
-const { artwork, eager = false, group } = Astro.props;
-const { id, data, cover, placeholder, aspect } = artwork;
-const priceLabel = group?.priceLabel ?? artwork.priceLabel;
-const label = group ? `${group.title} · ${group.members.length} pieces` : data.dimensions;
+const { artwork, eager = false } = Astro.props;
+const { id, data, cover, placeholder, aspect, priceLabel } = artwork;
 // Tiles are laid out in rows roughly 420px tall on large screens, full width on phones.
 const sizes = `(max-width: 640px) 100vw, ${Math.round(aspect * 440)}px`;
 ---
 
 <li
-  class:list={['tile', { 'tile-group': group }]}
+  class="tile"
   data-id={id}
-  data-members={group?.members.map((m) => m.id).join(' ')}
   style={`--ar: ${aspect.toFixed(4)}`}
 >
   <a class="tile-link" href={url(`art/${id}`)} data-open={id}>
@@ -39,7 +34,7 @@ const sizes = `(max-width: 640px) 100vw, ${Math.round(aspect * 440)}px`;
       />
     </div>
     <div class="tile-caption">
-      <span class="tile-dims">{label}</span>
+      <span class="tile-dims">{data.dimensions}</span>
       <span class="tile-price">{priceLabel}</span>
     </div>
   </a>

@@ -1,7 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
-import { groups, mediums, type Medium } from './site.config';
+import { mediums, type Medium } from './site.config';
 
 const mediumKeys = Object.keys(mediums) as [Medium, ...Medium[]];
 
@@ -35,10 +35,6 @@ const artworks = defineCollection({
     instagram: z.url().optional(),
     /** Lower numbers appear first. Artworks without it are sorted newest first. */
     order: z.number().optional(),
-    /** Show in the selection at the top of the gallery, before "See all". */
-    featured: z.boolean().default(false),
-    /** Id of a set in `groups` (site.config.ts); the set is shown as one tile. */
-    group: z.enum(Object.keys(groups) as [string, ...string[]]).optional(),
   }),
 });
 

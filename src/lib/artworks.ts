@@ -42,7 +42,7 @@ export interface Artwork {
   data: CollectionEntry<'artworks'>['data'];
   mediumLabel: string;
   priceLabel: string;
-  /** Size category for the gallery filters, from the longest side of `dimensions`. */
+  /** Size category (large / medium / small), from the area given by `dimensions`. */
   size: Size;
   aspect: number;
   /** Tile-sized cover image for the grid. */
@@ -88,12 +88,12 @@ function mediaFor(id: string): MediaSource[] {
     .map(([, item]) => item);
 }
 
-/** Size category from free-text dimensions like "60 × 80 cm" (medium if unreadable). */
+/** Size category from free-text dimensions like "60 × 80 cm", by area (medium if unreadable). */
 export function sizeOf(dimensions: string | undefined): Size {
   const numbers = (dimensions?.match(/\d+(\.\d+)?/g) ?? []).map(Number);
-  if (numbers.length === 0) return 'medium';
-  const longest = Math.max(...numbers);
-  return (sizes.find((s) => longest >= s.minLongestSide) ?? sizes[sizes.length - 1]).key;
+  if (numbers.length < 2) return 'medium';
+  const area = numbers[0] * numbers[1];
+  return (sizes.find((s) => area >= s.minArea) ?? sizes[sizes.length - 1]).key;
 }
 
 export function formatAmount(amount: number, currency?: string): string {

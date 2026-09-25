@@ -1,6 +1,6 @@
 ---
 import type { Artwork } from '../lib/artworks';
-import { groups, site } from '../site.config';
+import { site } from '../site.config';
 import BuyForm from './BuyForm.astro';
 
 interface Props {
@@ -82,7 +82,7 @@ const soldMail = `mailto:${site.contactEmail}?subject=${encodeURIComponent(`Abou
   </div>
 
   <div class="detail-info">
-    <p class="detail-kicker">{data.group ? groups[data.group].title : mediumLabel}</p>
+    <p class="detail-kicker">{mediumLabel}</p>
     <h2 class="detail-title">{data.title}</h2>
     <p class="detail-price">
       {priceLabel}
