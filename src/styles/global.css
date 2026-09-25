@@ -259,6 +259,11 @@ h3 {
   .tile {
     flex: 1 1 100%;
   }
+
+  /* Full width on phones, like every other piece. */
+  .grid-lead .tile {
+    max-width: none;
+  }
 }
 
 .tile-link {
