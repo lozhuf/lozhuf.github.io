@@ -5,12 +5,14 @@ import { url } from '../lib/url';
 interface Props {
   artwork: Artwork;
   eager?: boolean;
+  /** Shown larger, in the lead row at the top of a page. */
+  lead?: boolean;
 }
 
 const { artwork, eager = false } = Astro.props;
 const { id, data, cover, placeholder, aspect, priceLabel } = artwork;
-// Tiles are laid out in rows roughly 420px tall on large screens, full width on phones.
-const sizes = `(max-width: 640px) 100vw, ${Math.round(aspect * 440)}px`;
+// Tiles are laid out in rows roughly 280–340px tall on large screens, full width on phones.
+const sizes = `(max-width: 640px) 100vw, ${Math.round(aspect * (Astro.props.lead ? 580 : 360))}px`;
 ---
 
 <li

@@ -24,14 +24,29 @@ const shown = artworks.filter((a) => inCategory(a, category));
 // Sold pieces get their own section below everything that's still for sale.
 const forSale = shown.filter((a) => a.data.status !== 'sold');
 const sold = shown.filter((a) => a.data.status === 'sold');
+
+// The first pieces (in `order`) are shown larger in a lead row, when there's
+// enough on the page for that to make sense.
+const LEAD = 2;
+const lead = forSale.length > LEAD + 2 ? forSale.slice(0, LEAD) : [];
+const rest = forSale.slice(lead.length);
 ---
 
 <SiteHeader current={category} counts={categoryCounts(artworks)} />
 
 <main class="gallery">
   <section class="gallery-section" aria-label="Available">
+    {
+      lead.length > 0 && (
+        <ul class="grid grid-lead">
+          {lead.map((a) => (
+            <Tile artwork={a} eager lead />
+          ))}
+        </ul>
+      )
+    }
     <ul class="grid">
-      {forSale.map((a, i) => <Tile artwork={a} eager={i < 6} />)}
+      {rest.map((a, i) => <Tile artwork={a} eager={i < 4} />)}
     </ul>
   </section>
   {
