@@ -55,6 +55,12 @@ const artworks = defineCollection({
         }),
       ])
       .optional(),
+    /**
+     * Where the piece is now, e.g. who bought it or which exhibition it's at.
+     * For your own records only: never shown on the site (but visible in the
+     * public GitHub repository).
+     */
+    location: z.string().optional(),
     /** Lower numbers appear first. Artworks without it are sorted newest first. */
     order: z.number().optional(),
   }),

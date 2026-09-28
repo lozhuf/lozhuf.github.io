@@ -123,6 +123,7 @@ function clean(folder, edits, mediums) {
       case 'dimensions':
       case 'materials':
       case 'description':
+      case 'location':
         out[key] = value || undefined;
         break;
       default:
