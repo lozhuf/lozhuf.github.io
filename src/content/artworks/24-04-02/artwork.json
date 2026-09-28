@@ -2,10 +2,14 @@
   "title": "24.04.02",
   "medium": "painting",
   "materials": "Acrylic on paper",
-  "dimensions": "21 × 30 cm",
+  "dimensions": "17.5 × 26.5 cm",
   "year": 2024,
   "price": 800,
   "status": "available",
   "instagram": "https://www.instagram.com/p/C5RZCqFr82y/",
-  "order": 180
+  "hiResPhoto": true,
+  "order": 170,
+  "frame": {
+    "style": "white"
+  }
 }
