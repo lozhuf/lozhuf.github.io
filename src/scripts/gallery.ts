@@ -53,6 +53,8 @@ interface Carousel {
   /** Move by `delta` slides; returns false if that would go past either end. */
   step(delta: number): boolean;
   image(): HTMLImageElement | null;
+  /** What's shown on the current slide: its frame, if it has one, otherwise the image. */
+  visual(): HTMLElement | null;
   sync(): void;
 }
 
@@ -117,6 +119,10 @@ function createCarousel(root: HTMLElement): Carousel | null {
       return true;
     },
     image: () => slides[index()]?.querySelector('img') ?? null,
+    visual: () => {
+      const slide = slides[index()];
+      return slide?.querySelector<HTMLElement>('.framed') ?? slide?.querySelector('img') ?? null;
+    },
     sync,
   };
 }
@@ -187,11 +193,12 @@ function focusOverlay() {
 // ---------------------------------------------------------------------------
 // Overlay animation helpers
 
-function tileImage(id: string | null): HTMLImageElement | null {
+/** A tile's picture: its frame, if it's framed, otherwise its image. */
+function tileVisual(id: string | null): HTMLElement | null {
   if (!id) return null;
   const tile = tiles.find((t) => t.dataset.id === id);
   if (!tile || tile.hidden) return null;
-  return tile.querySelector('img');
+  return tile.querySelector<HTMLElement>('.framed') ?? tile.querySelector('img');
 }
 
 function onScreen(el: Element): boolean {
@@ -199,12 +206,19 @@ function onScreen(el: Element): boolean {
   return r.width > 0 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
 }
 
-/** A copy of an image, fixed over `rect`, used to animate between tile and overlay. */
-function makeGhost(src: string, rect: DOMRect): HTMLImageElement {
-  const ghost = document.createElement('img');
-  ghost.className = 'ghost';
-  ghost.alt = '';
-  ghost.src = src;
+/** A copy of an image (or framed image), fixed over `rect`, used to animate between tile and overlay. */
+function makeGhost(source: HTMLElement, rect: DOMRect): HTMLElement {
+  const ghost = source.cloneNode(true) as HTMLElement;
+  // Reuse the image that's already loaded rather than letting the copy pick its own size.
+  for (const img of [ghost, ...ghost.querySelectorAll('img')].filter((el) => el instanceof HTMLImageElement)) {
+    const original = source instanceof HTMLImageElement ? source : source.querySelector('img');
+    img.removeAttribute('srcset');
+    img.src = original?.currentSrc || original?.src || img.src;
+    img.alt = '';
+    img.style.opacity = '';
+  }
+  ghost.classList.add('ghost');
+  ghost.removeAttribute('aria-hidden');
   Object.assign(ghost.style, {
     left: `${rect.left}px`,
     top: `${rect.top}px`,
@@ -294,13 +308,14 @@ async function openArtwork(id: string, animate = true) {
   }
 
   busy = true;
-  const source = tileImage(id);
-  const target = carousel?.image();
+  const source = tileVisual(id);
+  const target = carousel?.visual();
+  const targetImage = carousel?.image();
   try {
-    if (source && target && onScreen(source)) {
+    if (source && target && targetImage && onScreen(source)) {
       const from = source.getBoundingClientRect();
       const to = target.getBoundingClientRect();
-      const ghost = makeGhost(source.currentSrc || source.src, from);
+      const ghost = makeGhost(source, from);
       target.style.opacity = '0';
 
       const flight = ghost.animate(
@@ -314,7 +329,7 @@ async function openArtwork(id: string, animate = true) {
       ]);
 
       // Swap the ghost for the full-resolution image once it's ready.
-      await waitForImage(target, 800);
+      await waitForImage(targetImage, 800);
       target.style.opacity = '';
       await ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150 }).finished;
       ghost.remove();
@@ -331,16 +346,16 @@ async function closeOverlay(animate = true) {
   if (!overlay.open || busy) return;
   busy = true;
   const id = currentId;
-  const source = tileImage(id);
+  const source = tileVisual(id);
 
   try {
     if (animate && !reducedMotion.matches) {
-      const target = carousel?.image();
+      const target = carousel?.visual();
       const flyBack = source && target && carousel?.index() === 0 && onScreen(source);
       if (flyBack) {
         const from = target.getBoundingClientRect();
         const to = source.getBoundingClientRect();
-        const ghost = makeGhost(target.currentSrc || target.src, from);
+        const ghost = makeGhost(target, from);
         target.style.opacity = '0';
         await Promise.all([
           ghost.animate([{ transform: 'none' }, { transform: transformBetween(from, to) }], {

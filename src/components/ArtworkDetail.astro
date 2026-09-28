@@ -2,13 +2,14 @@
 import type { Artwork } from '../lib/artworks';
 import { site } from '../site.config';
 import BuyForm from './BuyForm.astro';
+import Framed from './Framed.astro';
 
 interface Props {
   artwork: Artwork;
 }
 
 const { artwork } = Astro.props;
-const { id, data, images, thumbs, mediumLabel, priceLabel } = artwork;
+const { id, data, images, thumbs, mediumLabel, priceLabel, frame } = artwork;
 const multiple = images.length > 1;
 const paragraphs = data.description?.split(/\n\s*\n/) ?? [];
 const facts = [
@@ -24,7 +25,7 @@ const soldMail = `mailto:${site.contactEmail}?subject=${encodeURIComponent(`Abou
     <div class="slides" tabindex="0" aria-roledescription="carousel" aria-label={`Images of ${data.title}`}>
       {
         images.map((img, i) => (
-          <figure class="slide" style={`--ar: ${(img.width / img.height).toFixed(4)}`}>
+          <figure class="slide" style={`--ar: ${(img.framed ? frame!.aspect : img.width / img.height).toFixed(4)}`}>
             {img.video ? (
               <video
                 src={img.video}
@@ -39,16 +40,18 @@ const soldMail = `mailto:${site.contactEmail}?subject=${encodeURIComponent(`Abou
                 preload="none"
               />
             ) : (
-              <img
-                src={img.src}
-                srcset={img.srcset}
-                sizes="(max-width: 900px) 100vw, calc(100vw - 440px)"
-                width={img.width}
-                height={img.height}
-                alt={img.alt}
-                loading={i === 0 ? 'eager' : 'lazy'}
-                decoding="async"
-              />
+              <Framed layout={img.framed ? frame : null}>
+                <img
+                  src={img.src}
+                  srcset={img.srcset}
+                  sizes="(max-width: 900px) 100vw, calc(100vw - 440px)"
+                  width={img.width}
+                  height={img.height}
+                  alt={img.alt}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
+              </Framed>
             )}
           </figure>
         ))
@@ -67,12 +70,14 @@ const soldMail = `mailto:${site.contactEmail}?subject=${encodeURIComponent(`Abou
             {thumbs.map((t, i) => (
               <button
                 type="button"
-                class:list={['thumb', { 'thumb-video': t.video }]}
+                class:list={['thumb', { 'thumb-video': t.video, 'thumb-framed': t.framed }]}
                 data-index={i}
                 aria-label={`Show ${t.video ? 'video' : 'image'} ${i + 1} of ${thumbs.length}`}
                 aria-current={i === 0 ? 'true' : 'false'}
               >
-                <img src={t.src} srcset={t.srcset} sizes="56px" alt="" loading="lazy" decoding="async" />
+                <Framed layout={t.framed ? frame : null}>
+                  <img src={t.src} srcset={t.srcset} sizes="56px" alt="" loading="lazy" decoding="async" />
+                </Framed>
               </button>
             ))}
           </div>

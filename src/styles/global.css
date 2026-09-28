@@ -740,7 +740,7 @@ html:has(.video-overlay[open]) {
   stroke-linejoin: round;
 }
 
-.ghost {
+.overlay .ghost {
   position: fixed;
   z-index: 2;
   margin: 0;
@@ -803,6 +803,19 @@ html:has(.video-overlay[open]) {
   box-shadow: 0 30px 60px -30px rgb(28 27 25 / 0.35);
 }
 
+.slide .framed {
+  width: min(100cqw, 100cqh * var(--ar));
+  box-shadow: 0 30px 60px -30px rgb(28 27 25 / 0.45);
+}
+
+.slide .framed-art img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  background: none;
+  box-shadow: none;
+}
+
 .nav {
   position: absolute;
   top: calc(50% - 40px);
@@ -856,6 +869,19 @@ html:has(.video-overlay[open]) {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* The framed view's thumbnail shows the whole frame. */
+.thumb-framed {
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  background: none;
+  container-type: size;
+}
+
+.thumb-framed .framed {
+  width: min(100cqw, 100cqh * var(--ar));
 }
 
 .thumb-video {

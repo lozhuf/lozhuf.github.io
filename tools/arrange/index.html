@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <title>Arrange artworks</title>
+<link rel="stylesheet" href="/frame.css" />
 <style>
   :root {
     --bg: #f7f5f0; --panel: #fff; --ink: #1c1b19; --muted: #6f6b63; --line: #e0dbd1; --accent: #970000;
@@ -44,7 +45,15 @@
   aside .empty { color: var(--muted); }
   aside h2 { margin: 0 0 2px; font-size: 16px; }
   aside .folder { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
-  aside img.preview { display: block; width: 100%; max-height: 240px; object-fit: contain; background: #f0ece4; border-radius: 6px; margin-bottom: 14px; }
+  .preview { height: 280px; padding: 18px; margin-bottom: 14px; background: #ebe7df; border-radius: 6px; }
+  .preview-inner { display: grid; place-items: center; width: 100%; height: 100%; container-type: size; }
+  .preview-inner > img { display: block; max-width: 100%; max-height: 100%; }
+  .preview-inner > .framed { width: min(100cqw, 100cqh * var(--ar)); box-shadow: 0 10px 24px -10px rgb(0 0 0 / .45); }
+  .frame { margin: 0 0 14px; padding: 12px 12px 2px; border: 1px solid var(--line); border-radius: 8px; }
+  .frame .check { margin-bottom: 10px; font-weight: 600; }
+  .frame-info { margin: -4px 0 10px; color: var(--muted); font-size: 12px; }
+  .frame .error:empty, .frame-info:empty { display: none; }
+  .frame .error { margin: -4px 0 10px; }
   .field { display: grid; gap: 4px; margin-bottom: 12px; }
   .field > span { font-size: 12px; color: var(--muted); }
   .field input, .field select, .field textarea { width: 100%; }
@@ -72,7 +81,9 @@
 <aside id="panel"><p class="empty">Click a piece to edit it.</p></aside>
 <div class="toast" id="toast"></div>
 
-<script>
+<script type="module">
+import { FRAME_STYLES, layoutFrame, frameVars } from '/frame.js';
+
 const $ = (id) => document.getElementById(id);
 const nf = new Intl.NumberFormat('da-DK');
 let original = [];   // artworks as loaded
@@ -140,6 +151,7 @@ function renderGrid() {
         ${status !== 'available' ? `<span class="tag ${status}">${status}</span>` : ''}
         ${lead.has(f) ? '<span class="tag lead">lead</span>' : ''}
         ${value(f, 'hiResPhoto') ? '<span class="tag hires">hi-res</span>' : ''}
+        ${value(f, 'frame') ? '<span class="tag">framed</span>' : ''}
       </div>`;
     li.addEventListener('click', () => select(f));
     li.addEventListener('dragstart', (e) => { li.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', f); });
@@ -186,9 +198,14 @@ function select(f) {
   renderPanel();
 }
 
+/** Frame settings in a comparable form: true is the same as a black frame sized automatically. */
+const frameKey = (x) => (x ? JSON.stringify([x.size || '', x.style || 'black']) : '');
+
 function setField(f, key, v) {
   const orig = byFolder(f).data[key];
-  const same = (orig ?? '') === (v ?? '') || (key === 'hiResPhoto' && !!orig === !!v) || (key === 'price' && String(orig ?? '') === String(v ?? ''));
+  const same =
+    key === 'frame' ? frameKey(orig) === frameKey(v) :
+    (orig ?? '') === (v ?? '') || (key === 'hiResPhoto' && !!orig === !!v) || (key === 'price' && String(orig ?? '') === String(v ?? ''));
   edits[f] ??= {};
   if (same) delete edits[f][key];
   else edits[f][key] = v;
@@ -202,10 +219,12 @@ function renderPanel() {
   if (!f) { panel.innerHTML = '<p class="empty">Click a piece to edit it.</p>'; return; }
   const a = byFolder(f);
   const pos = order.indexOf(f) + 1;
+  const frameValue = value(f, 'frame');
+  const frame = frameValue && (frameValue === true ? {} : frameValue);
   panel.innerHTML = `
     <h2>${esc(value(f, 'title'))}</h2>
     <div class="folder">${esc(f)} · ${a.photos} photo${a.photos === 1 ? '' : 's'} · position ${pos} of ${order.length}</div>
-    ${a.cover ? `<img class="preview" src="/thumb?path=${encodeURIComponent(a.cover)}" alt="">` : ''}
+    ${a.cover ? '<div class="preview"><div class="preview-inner" id="preview"></div></div>' : ''}
     <div class="move">
       <button data-move="top" title="Move to the start">⇤ First</button>
       <button data-move="-1">← Earlier</button>
@@ -233,6 +252,19 @@ function renderPanel() {
       <label class="field"><span>Materials</span><input type="text" data-key="materials" value="${esc(value(f, 'materials'))}"></label>
     </div>
     <label class="check"><input type="checkbox" data-key="hiResPhoto" ${value(f, 'hiResPhoto') ? 'checked' : ''}> Main photo is hi-res (good enough for prints)</label>
+    <fieldset class="frame">
+      <label class="check"><input type="checkbox" id="frameOn" ${frame ? 'checked' : ''}> Show in a frame</label>
+      <div class="row">
+        <label class="field"><span>Moulding</span>
+          <select id="frameStyle" ${frame ? '' : 'disabled'}>${FRAME_STYLES.map((s) => `<option value="${s}" ${(frame?.style ?? 'black') === s ? 'selected' : ''}>${s === 'none' ? 'none (mat only)' : s}</option>`).join('')}</select>
+        </label>
+        <label class="field"><span>Outer size (empty = auto)</span>
+          <input type="text" id="frameSize" value="${esc(frame?.size)}" placeholder="e.g. 30 × 40 cm" ${frame ? '' : 'disabled'}>
+        </label>
+      </div>
+      <p class="frame-info" id="frameInfo"></p>
+      <p class="error" id="frameError"></p>
+    </fieldset>
     <label class="field"><span>Instagram link</span><input type="url" data-key="instagram" value="${esc(value(f, 'instagram'))}"></label>
     <label class="field"><span>Print link (e.g. Etsy listing)</span><input type="url" data-key="print" value="${esc(value(f, 'print'))}"></label>
     <label class="field"><span>Description</span><textarea rows="4" data-key="description">${esc(value(f, 'description'))}</textarea></label>`;
@@ -243,13 +275,76 @@ function renderPanel() {
     el.addEventListener(el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input', () => {
       setField(f, key, read());
       if (key === 'title') panel.querySelector('h2').textContent = el.value;
+      if (key === 'dimensions') drawPreview();
     });
   });
+  const updateFrame = () => {
+    const on = $('frameOn').checked, style = $('frameStyle').value, size = $('frameSize').value.trim();
+    $('frameStyle').disabled = $('frameSize').disabled = !on;
+    setField(f, 'frame', on && (!size && style === 'black' ? true : { ...(size && { size }), style }));
+    drawPreview();
+  };
+  $('frameOn').addEventListener('change', updateFrame);
+  $('frameStyle').addEventListener('change', updateFrame);
+  $('frameSize').addEventListener('input', updateFrame);
+  loadPreview(f);
   panel.querySelectorAll('[data-move]').forEach((b) => b.addEventListener('click', () => {
     const m = b.dataset.move, i = order.indexOf(f);
     move(f, m === 'top' ? 0 : m === 'bottom' ? order.length - 1 : i + Number(m));
   }));
   $('pos').addEventListener('change', (e) => move(f, Number(e.target.value) - 1));
+}
+
+// The selected piece's photo, shown on its own or in its frame exactly as the website draws it.
+let previewImage = null;
+
+function loadPreview(f) {
+  const cover = byFolder(f).cover;
+  if (!cover) return;
+  const src = `/thumb?path=${encodeURIComponent(cover)}&size=900`;
+  if (previewImage?.dataset.src !== src) {
+    previewImage = new Image();
+    previewImage.alt = '';
+    previewImage.dataset.src = src;
+    previewImage.src = src;
+  }
+  if (previewImage.complete) drawPreview();
+  else previewImage.onload = drawPreview;
+}
+
+function drawPreview() {
+  const box = $('preview');
+  if (!box || !previewImage?.naturalWidth) return;
+  const f = selected;
+  const aspect = previewImage.naturalWidth / previewImage.naturalHeight;
+  let layout = null;
+  $('frameError').textContent = '';
+  $('frameInfo').textContent = '';
+  try {
+    layout = layoutFrame(value(f, 'frame'), value(f, 'dimensions'), aspect);
+  } catch (err) {
+    $('frameError').textContent = err.message;
+  }
+  // Show what "auto" works out to.
+  const auto = layoutFrame(true, value(f, 'dimensions') || '1 × 1', aspect);
+  $('frameSize').placeholder = `auto: ${auto.width} × ${auto.height} cm`;
+  if (!layout) {
+    box.replaceChildren(previewImage);
+    return;
+  }
+  const { width, height, moulding, art } = layout;
+  const cm = (n) => `${Math.round(n * 10) / 10} cm`;
+  $('frameInfo').textContent =
+    `Frame ${width} × ${height} cm${layout.common ? '' : ' (made to measure)'}, ${moulding ? `${cm(moulding)} moulding, ` : ''}` +
+    `mat ${cm((width - art.w) / 2 - moulding)} at the sides, ${cm((height - art.h) / 2 - moulding)} top and bottom`;
+  const framed = document.createElement('div');
+  framed.className = `framed framed-${layout.style}`;
+  framed.style.cssText = frameVars(layout);
+  const inner = document.createElement('div');
+  inner.className = 'framed-art';
+  inner.append(previewImage);
+  framed.append(inner);
+  box.replaceChildren(framed);
 }
 
 async function load() {

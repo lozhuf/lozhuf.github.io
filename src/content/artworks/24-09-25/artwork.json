@@ -9,5 +9,6 @@
   "description": "A quick 10 minute mini life drawing sketch.",
   "instagram": "https://www.instagram.com/p/DAWGAteoUhP/",
   "order": 80,
-  "hiResPhoto": true
+  "hiResPhoto": true,
+  "frame": true
 }

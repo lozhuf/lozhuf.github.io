@@ -6,6 +6,8 @@
 // order. Drag to reorder, click a piece to edit its status, price and other
 // details, then Save to write the changes into the artwork.json files.
 // The `order` numbers are rewritten as 10, 20, 30… to match the new sequence.
+// It can also put a piece in a frame (drawn by the site; photos aren't changed),
+// with a live preview.
 
 import { createServer } from 'node:http';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
@@ -14,6 +16,7 @@ import { join, resolve, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import sharp from 'sharp';
+import { FRAME_STYLES, layoutFrame, parseSize } from '../../src/lib/frame.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -22,6 +25,8 @@ const CONFIG = join(root, 'src/site.config.ts');
 const PORT = Number(process.env.PORT ?? 4420);
 const IMAGE = /\.(jpe?g|png|webp)$/i;
 const STATUSES = ['available', 'reserved', 'sold'];
+// Shared with the website, so the preview matches it exactly.
+const SHARED = { '/frame.js': 'src/lib/frame.js', '/frame.css': 'src/styles/frame.css' };
 
 /** Medium keys and size thresholds, read from site.config.ts so they stay in sync. */
 async function siteConfig() {
@@ -97,6 +102,19 @@ function clean(folder, edits, mediums) {
       case 'hiResPhoto':
         out.hiResPhoto = value ? true : undefined;
         break;
+      case 'frame': {
+        if (!value) {
+          out.frame = undefined;
+          break;
+        }
+        const style = value.style ?? 'black';
+        const size = String(value.size ?? '').trim();
+        if (!FRAME_STYLES.includes(style)) fail(`frame style must be one of ${FRAME_STYLES.join(', ')}`);
+        if (size && !parseSize(size)) fail(`couldn’t read the frame size "${size}" (write it like "30 × 40 cm")`);
+        // Plain `true` when it's the default: a black frame, sized automatically.
+        out.frame = !size && style === 'black' ? true : { ...(size && { size }), style };
+        break;
+      }
       case 'instagram':
       case 'print':
         if (value && !/^https?:\/\//.test(value)) fail(`${key} must be a web address starting with https://`);
@@ -134,11 +152,16 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/api/data') {
       return send(res, 200, { artworks: await listArtworks(), ...(await siteConfig()) });
     }
+    if (req.method === 'GET' && SHARED[url.pathname]) {
+      const type = url.pathname.endsWith('.js') ? 'text/javascript' : 'text/css';
+      return send(res, 200, await readFile(join(root, SHARED[url.pathname])), `${type}; charset=utf-8`);
+    }
     if (req.method === 'GET' && url.pathname === '/thumb') {
       const [folder, file] = String(url.searchParams.get('path')).split('/');
       const full = join(folderPath(folder), file ?? '');
       if (!IMAGE.test(full) || !existsSync(full)) return send(res, 404, { error: 'Not found' });
-      const data = await sharp(full).rotate().resize(320, 320, { fit: 'inside' }).jpeg({ quality: 75 }).toBuffer();
+      const px = Math.min(1200, Math.max(64, Number(url.searchParams.get('size')) || 320));
+      const data = await sharp(full).rotate().resize(px, px, { fit: 'inside' }).jpeg({ quality: 78 }).toBuffer();
       return send(res, 200, data, 'image/jpeg');
     }
     if (req.method === 'POST' && url.pathname === '/api/save') {
@@ -151,6 +174,17 @@ const server = createServer(async (req, res) => {
       }
       // Validate everything before writing anything.
       const cleaned = Object.fromEntries(Object.entries(edits).map(([f, e]) => [f, clean(f, e, mediums)]));
+      // Check each framed piece still fits its frame (the website's build would fail otherwise).
+      for (const a of current) {
+        const data = { ...a.data, ...cleaned[a.folder] };
+        if (!data.frame || !a.cover) continue;
+        const { width, height, orientation = 1 } = await sharp(join(ARTWORKS, a.cover)).metadata();
+        try {
+          layoutFrame(data.frame, data.dimensions, orientation >= 5 ? height / width : width / height);
+        } catch (err) {
+          return send(res, 400, { error: `${a.folder}: ${err.message}` });
+        }
+      }
       let written = 0;
       for (const [i, folder] of order.entries()) {
         const file = join(folderPath(folder), 'artwork.json');

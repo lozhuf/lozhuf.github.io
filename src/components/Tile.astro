@@ -1,6 +1,7 @@
 ---
 import type { Artwork } from '../lib/artworks';
 import { url } from '../lib/url';
+import Framed from './Framed.astro';
 
 interface Props {
   artwork: Artwork;
@@ -10,7 +11,7 @@ interface Props {
 }
 
 const { artwork, eager = false } = Astro.props;
-const { id, data, cover, placeholder, aspect, priceLabel } = artwork;
+const { id, data, cover, placeholder, aspect, priceLabel, frame } = artwork;
 // Tiles are laid out in rows roughly 280–340px tall on large screens, full width on phones.
 const sizes = `(max-width: 640px) 100vw, ${Math.round(aspect * (Astro.props.lead ? 580 : 360))}px`;
 ---
@@ -21,19 +22,21 @@ const sizes = `(max-width: 640px) 100vw, ${Math.round(aspect * (Astro.props.lead
   style={`--ar: ${aspect.toFixed(4)}`}
 >
   <a class="tile-link" href={url(`art/${id}`)} data-open={id}>
-    <div class="tile-frame" style={`background-image: url(${placeholder})`}>
-      <img
-        src={cover.src}
-        srcset={cover.srcset}
-        sizes={sizes}
-        width={cover.width}
-        height={cover.height}
-        alt={cover.alt}
-        loading={eager ? 'eager' : 'lazy'}
-        fetchpriority={eager ? 'high' : 'auto'}
-        decoding="async"
-        onload="this.classList.add('is-loaded')"
-      />
+    <div class="tile-frame" style={frame ? undefined : `background-image: url(${placeholder})`}>
+      <Framed layout={frame} placeholder={placeholder}>
+        <img
+          src={cover.src}
+          srcset={cover.srcset}
+          sizes={sizes}
+          width={cover.width}
+          height={cover.height}
+          alt={cover.alt}
+          loading={eager ? 'eager' : 'lazy'}
+          fetchpriority={eager ? 'high' : 'auto'}
+          decoding="async"
+          onload="this.classList.add('is-loaded')"
+        />
+      </Framed>
     </div>
     <div class="tile-caption">
       <span class="tile-dims">{data.dimensions}</span>

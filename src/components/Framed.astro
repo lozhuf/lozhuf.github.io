@@ -1,0 +1,25 @@
+---
+import { frameVars, type FrameLayout } from '../lib/frame';
+import '../styles/frame.css';
+
+interface Props {
+  /** The frame to draw around the image. Without one, the image is shown as it is. */
+  layout?: FrameLayout | null;
+  /** Tiny blurred image shown behind the photo while it loads. */
+  placeholder?: string;
+}
+
+const { layout, placeholder } = Astro.props;
+---
+
+{
+  layout ? (
+    <div class={`framed framed-${layout.style}`} style={frameVars(layout)}>
+      <div class="framed-art" style={placeholder ? `background-image: url(${placeholder})` : undefined}>
+        <slot />
+      </div>
+    </div>
+  ) : (
+    <slot />
+  )
+}

@@ -2,6 +2,7 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { mediums, site, sizes, type Medium, type Size } from '../site.config';
+import { layoutFrame, parseSize, type FrameLayout } from './frame';
 
 // Every image and video inside an artwork folder, keyed by path. Vite resolves these at build time.
 // A video (e.g. 04.mp4) needs a matching cover image (04.poster.jpg), shown until it plays.
@@ -30,6 +31,8 @@ export interface ArtworkImage {
   alt: string;
   /** Set when this carousel item is a video; the image fields then describe its cover. */
   video?: string;
+  /** Shown inside the artwork's frame (the first carousel item of a framed artwork). */
+  framed?: boolean;
 }
 
 interface MediaSource {
@@ -44,7 +47,10 @@ export interface Artwork {
   priceLabel: string;
   /** Size category (large / medium / small), from the area given by `dimensions`. */
   size: Size;
+  /** Width ÷ height of the tile: the frame's when framed, otherwise the main photo's. */
   aspect: number;
+  /** The frame drawn around the main photo, when `frame` is set. */
+  frame: FrameLayout | null;
   /** Tile-sized cover image for the grid. */
   cover: ArtworkImage;
   /** Tiny version of the cover, shown blurred while the real one loads. */
@@ -90,8 +96,8 @@ function mediaFor(id: string): MediaSource[] {
 
 /** Size category from free-text dimensions like "60 × 80 cm", by area (medium if unreadable). */
 export function sizeOf(dimensions: string | undefined): Size {
-  const numbers = (dimensions?.match(/\d+(\.\d+)?/g) ?? []).map(Number);
-  if (numbers.length < 2) return 'medium';
+  const numbers = parseSize(dimensions);
+  if (!numbers) return 'medium';
   const area = numbers[0] * numbers[1];
   return (sizes.find((s) => area >= s.minArea) ?? sizes[sizes.length - 1]).key;
 }
@@ -161,6 +167,13 @@ async function load(): Promise<Artwork[]> {
           ? coverAlt
           : `${data.title} — ${media[i].video ? 'video' : 'image'} ${i + 1} of ${media.length}`;
 
+      let frame: FrameLayout | null;
+      try {
+        frame = media[0].video ? null : layoutFrame(data.frame, data.dimensions, first.width / first.height);
+      } catch (err) {
+        throw new Error(`Artwork "${entry.id}" (src/content/artworks/${entry.id}/artwork.json): ${(err as Error).message}`);
+      }
+
       const [cover, placeholder, og, images, thumbs] = await Promise.all([
         responsive(first, [480, 800, 1200, 1600], coverAlt),
         getImage({ src: first, width: 24, format: 'webp', quality: 50 }),
@@ -169,13 +182,20 @@ async function load(): Promise<Artwork[]> {
         Promise.all(media.map((m, i) => responsive(m.image, [120, 240], altFor(i), m.video))),
       ]);
 
+      // A framed piece opens on the framed view, followed by the photo on its own.
+      if (frame) {
+        images.unshift({ ...images[0], alt: `${coverAlt}, shown framed`, framed: true });
+        thumbs.unshift({ ...thumbs[0], framed: true });
+      }
+
       return {
         id: entry.id,
         data,
         mediumLabel: mediums[data.medium as Medium],
         priceLabel: formatPrice(data),
         size: sizeOf(data.dimensions),
-        aspect: first.width / first.height,
+        aspect: frame?.aspect ?? first.width / first.height,
+        frame,
         cover,
         placeholder: placeholder.src,
         images,

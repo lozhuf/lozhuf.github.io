@@ -2,6 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { mediums, type Medium } from './site.config';
+import { FRAME_STYLES } from './lib/frame';
 
 const mediumKeys = Object.keys(mediums) as [Medium, ...Medium[]];
 
@@ -40,6 +41,20 @@ const artworks = defineCollection({
      * could be used to make prints. Not shown on the site.
      */
     hiResPhoto: z.boolean().default(false),
+    /**
+     * Show the piece in a picture frame with a white mat (drawn by the site; the
+     * photo isn't changed). `true` picks a size automatically, or give the frame's
+     * outer size and moulding colour: { "size": "30 × 40 cm", "style": "black" }.
+     */
+    frame: z
+      .union([
+        z.literal(true),
+        z.object({
+          size: z.string().optional(),
+          style: z.enum(FRAME_STYLES).default('black'),
+        }),
+      ])
+      .optional(),
     /** Lower numbers appear first. Artworks without it are sorted newest first. */
     order: z.number().optional(),
   }),
