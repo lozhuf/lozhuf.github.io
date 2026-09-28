@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Arrange artworks</title>
+<style>
+  :root {
+    --bg: #f7f5f0; --panel: #fff; --ink: #1c1b19; --muted: #6f6b63; --line: #e0dbd1; --accent: #970000;
+    font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; height: 100vh; display: grid; grid-template-columns: 1fr 360px; grid-template-rows: auto 1fr; overflow: hidden; }
+  header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { margin: 0; font-size: 17px; }
+  header .hint { color: var(--muted); font-size: 13px; margin-right: auto; }
+  header label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+  select, input, textarea, button { font: inherit; color: inherit; }
+  select, input[type=text], input[type=number], input[type=url], textarea { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  button { padding: 7px 14px; border: 1px solid var(--line); border-radius: 6px; background: #fff; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--muted); }
+  button:disabled { opacity: .4; cursor: default; }
+  button.primary { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+
+  main { overflow-y: auto; padding: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+  .card { position: relative; background: var(--panel); border: 2px solid transparent; border-radius: 8px; padding: 8px; cursor: grab; box-shadow: 0 1px 3px rgb(0 0 0 / .08); user-select: none; }
+  .card:hover { box-shadow: 0 3px 10px rgb(0 0 0 / .12); }
+  .card.selected { border-color: var(--ink); }
+  .card.dragging { opacity: .35; }
+  .card.edited::after { content: ''; position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: #e3a008; box-shadow: 0 0 0 2px #fff; }
+  .card .num { position: absolute; top: 12px; left: 12px; min-width: 22px; padding: 1px 6px; border-radius: 999px; background: rgb(0 0 0 / .6); color: #fff; font-size: 11px; text-align: center; }
+  .card img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; background: #f0ece4; border-radius: 4px; pointer-events: none; }
+  .card .t { margin-top: 6px; font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .m { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 6px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .tag { padding: 0 7px; border-radius: 999px; font-size: 11px; background: #f0ece4; }
+  .tag.sold { background: #f6e3e1; color: #b3261e; }
+  .tag.reserved { background: #fdf0d5; color: #8a5a00; }
+  .tag.lead { background: var(--ink); color: #fff; }
+  .tag.hires { background: #e3f1e8; color: #1d7a46; }
+  .card.sold img { opacity: .55; }
+
+  aside { border-left: 1px solid var(--line); background: var(--panel); overflow-y: auto; padding: 20px; }
+  aside .empty { color: var(--muted); }
+  aside h2 { margin: 0 0 2px; font-size: 16px; }
+  aside .folder { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+  aside img.preview { display: block; width: 100%; max-height: 240px; object-fit: contain; background: #f0ece4; border-radius: 6px; margin-bottom: 14px; }
+  .field { display: grid; gap: 4px; margin-bottom: 12px; }
+  .field > span { font-size: 12px; color: var(--muted); }
+  .field input, .field select, .field textarea { width: 100%; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .check { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .move { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 16px; }
+  .move input { width: 64px; }
+  .error { color: #b3261e; font-size: 13px; }
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Arrange artworks</h1>
+  <span class="hint">Drag to reorder · click a piece to edit · the first two for sale on each size page are shown larger (“lead”)</span>
+  <label>Show
+    <select id="size"><option value="all">All sizes</option></select>
+  </label>
+  <label><input type="checkbox" id="hideSold" /> Hide sold</label>
+  <button id="revert" disabled>Discard changes</button>
+  <button id="save" class="primary" disabled>Save</button>
+</header>
+<main><ul class="grid" id="grid"></ul></main>
+<aside id="panel"><p class="empty">Click a piece to edit it.</p></aside>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const nf = new Intl.NumberFormat('da-DK');
+let original = [];   // artworks as loaded
+let order = [];      // folders in the current order
+let edits = {};      // folder -> changed fields
+let mediums = [], sizes = [];
+let selected = null;
+
+const byFolder = (f) => original.find((a) => a.folder === f);
+const value = (f, key) => (edits[f] && key in edits[f] ? edits[f][key] : byFolder(f).data[key]);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+function sizeOf(f) {
+  const n = (String(value(f, 'dimensions') || '').match(/\d+(\.\d+)?/g) || []).map(Number);
+  if (n.length < 2) return 'medium';
+  const area = n[0] * n[1];
+  return (sizes.find((s) => area >= s.minArea) || sizes[sizes.length - 1]).key;
+}
+
+function visible() {
+  const size = $('size').value, hideSold = $('hideSold').checked;
+  return order.filter((f) => (size === 'all' || sizeOf(f) === size) && !(hideSold && value(f, 'status') === 'sold'));
+}
+
+/** The first two pieces for sale on each size page get the larger "lead" spot. */
+function leads() {
+  const out = new Set();
+  for (const s of sizes) order.filter((f) => sizeOf(f) === s.key && value(f, 'status') !== 'sold').slice(0, 2).forEach((f) => out.add(f));
+  return out;
+}
+
+function isDirty() {
+  return Object.keys(edits).length > 0 || order.join() !== original.map((a) => a.folder).join();
+}
+
+function refreshButtons() {
+  const dirty = isDirty();
+  $('save').disabled = !dirty;
+  $('revert').disabled = !dirty;
+  const n = Object.keys(edits).length;
+  const moved = order.join() !== original.map((a) => a.folder).join();
+  const parts = [moved && 'order changed', n && `${n} edited`].filter(Boolean);
+  $('save').textContent = parts.length ? `Save (${parts.join(', ')})` : 'Save';
+}
+
+function renderGrid() {
+  const lead = leads();
+  const grid = $('grid');
+  const list = visible();
+  grid.replaceChildren(...list.map((f) => {
+    const a = byFolder(f);
+    const status = value(f, 'status');
+    const price = value(f, 'price');
+    const li = document.createElement('li');
+    li.className = 'card' + (f === selected ? ' selected' : '') + (edits[f] ? ' edited' : '') + (status === 'sold' ? ' sold' : '');
+    li.draggable = true;
+    li.dataset.folder = f;
+    li.innerHTML = `
+      <span class="num">${order.indexOf(f) + 1}</span>
+      ${a.cover ? `<img src="/thumb?path=${encodeURIComponent(a.cover)}" alt="" loading="lazy">` : '<img alt="">'}
+      <div class="t">${esc(value(f, 'title'))}</div>
+      <div class="m"><span>${esc(value(f, 'dimensions') || '')}</span><span>${status === 'sold' ? 'Sold' : price ? `${nf.format(price)} kr.` : 'On request'}</span></div>
+      <div class="tags">
+        <span class="tag">${sizes.find((s) => s.key === sizeOf(f))?.label ?? ''}</span>
+        ${status !== 'available' ? `<span class="tag ${status}">${status}</span>` : ''}
+        ${lead.has(f) ? '<span class="tag lead">lead</span>' : ''}
+        ${value(f, 'hiResPhoto') ? '<span class="tag hires">hi-res</span>' : ''}
+      </div>`;
+    li.addEventListener('click', () => select(f));
+    li.addEventListener('dragstart', (e) => { li.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', f); });
+    li.addEventListener('dragend', () => { li.classList.remove('dragging'); commitDomOrder(); });
+    return li;
+  }));
+  refreshButtons();
+}
+
+// While dragging, move the dragged card next to whichever card is under the pointer.
+$('grid').addEventListener('dragover', (e) => {
+  e.preventDefault();
+  const dragging = document.querySelector('.card.dragging');
+  const over = e.target.closest('.card');
+  if (!dragging || !over || over === dragging) return;
+  const r = over.getBoundingClientRect();
+  const after = e.clientX > r.left + r.width / 2;
+  over.parentNode.insertBefore(dragging, after ? over.nextSibling : over);
+});
+
+/** Write the on-screen order of the visible cards back into the full order. */
+function commitDomOrder() {
+  const shown = [...document.querySelectorAll('.card')].map((c) => c.dataset.folder);
+  const slots = order.map((f, i) => (shown.includes(f) ? i : -1)).filter((i) => i >= 0);
+  const next = [...order];
+  slots.forEach((slot, k) => (next[slot] = shown[k]));
+  order = next;
+  renderGrid();
+  if (selected) renderPanel();
+}
+
+function move(f, to) {
+  const from = order.indexOf(f);
+  to = Math.max(0, Math.min(order.length - 1, to));
+  order.splice(from, 1);
+  order.splice(to, 0, f);
+  renderGrid();
+  renderPanel();
+}
+
+function select(f) {
+  selected = f;
+  renderGrid();
+  renderPanel();
+}
+
+function setField(f, key, v) {
+  const orig = byFolder(f).data[key];
+  const same = (orig ?? '') === (v ?? '') || (key === 'hiResPhoto' && !!orig === !!v) || (key === 'price' && String(orig ?? '') === String(v ?? ''));
+  edits[f] ??= {};
+  if (same) delete edits[f][key];
+  else edits[f][key] = v;
+  if (!Object.keys(edits[f]).length) delete edits[f];
+  renderGrid();
+}
+
+function renderPanel() {
+  const f = selected;
+  const panel = $('panel');
+  if (!f) { panel.innerHTML = '<p class="empty">Click a piece to edit it.</p>'; return; }
+  const a = byFolder(f);
+  const pos = order.indexOf(f) + 1;
+  panel.innerHTML = `
+    <h2>${esc(value(f, 'title'))}</h2>
+    <div class="folder">${esc(f)} · ${a.photos} photo${a.photos === 1 ? '' : 's'} · position ${pos} of ${order.length}</div>
+    ${a.cover ? `<img class="preview" src="/thumb?path=${encodeURIComponent(a.cover)}" alt="">` : ''}
+    <div class="move">
+      <button data-move="top" title="Move to the start">⇤ First</button>
+      <button data-move="-1">← Earlier</button>
+      <button data-move="1">Later →</button>
+      <button data-move="bottom" title="Move to the end">Last ⇥</button>
+      <label>Position <input type="number" min="1" max="${order.length}" value="${pos}" id="pos"></label>
+    </div>
+    <div class="row">
+      <label class="field"><span>Status</span>
+        <select data-key="status">${['available', 'reserved', 'sold'].map((s) => `<option ${value(f, 'status') === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+      </label>
+      <label class="field"><span>Price (kr.) — empty = on request</span>
+        <input type="number" min="1" step="50" data-key="price" value="${value(f, 'price') ?? ''}">
+      </label>
+    </div>
+    <label class="field"><span>Title</span><input type="text" data-key="title" value="${esc(value(f, 'title'))}"></label>
+    <div class="row">
+      <label class="field"><span>Size (width × height)</span><input type="text" data-key="dimensions" value="${esc(value(f, 'dimensions'))}"></label>
+      <label class="field"><span>Year</span><input type="number" data-key="year" value="${esc(value(f, 'year'))}"></label>
+    </div>
+    <div class="row">
+      <label class="field"><span>Medium</span>
+        <select data-key="medium">${mediums.map((m) => `<option value="${m.key}" ${value(f, 'medium') === m.key ? 'selected' : ''}>${esc(m.label)}</option>`).join('')}</select>
+      </label>
+      <label class="field"><span>Materials</span><input type="text" data-key="materials" value="${esc(value(f, 'materials'))}"></label>
+    </div>
+    <label class="check"><input type="checkbox" data-key="hiResPhoto" ${value(f, 'hiResPhoto') ? 'checked' : ''}> Main photo is hi-res (good enough for prints)</label>
+    <label class="field"><span>Instagram link</span><input type="url" data-key="instagram" value="${esc(value(f, 'instagram'))}"></label>
+    <label class="field"><span>Print link (e.g. Etsy listing)</span><input type="url" data-key="print" value="${esc(value(f, 'print'))}"></label>
+    <label class="field"><span>Description</span><textarea rows="4" data-key="description">${esc(value(f, 'description'))}</textarea></label>`;
+
+  panel.querySelectorAll('[data-key]').forEach((el) => {
+    const key = el.dataset.key;
+    const read = () => (el.type === 'checkbox' ? el.checked : el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value);
+    el.addEventListener(el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input', () => {
+      setField(f, key, read());
+      if (key === 'title') panel.querySelector('h2').textContent = el.value;
+    });
+  });
+  panel.querySelectorAll('[data-move]').forEach((b) => b.addEventListener('click', () => {
+    const m = b.dataset.move, i = order.indexOf(f);
+    move(f, m === 'top' ? 0 : m === 'bottom' ? order.length - 1 : i + Number(m));
+  }));
+  $('pos').addEventListener('change', (e) => move(f, Number(e.target.value) - 1));
+}
+
+async function load() {
+  const data = await (await fetch('/api/data')).json();
+  original = data.artworks;
+  mediums = data.mediums;
+  sizes = data.sizes;
+  order = original.map((a) => a.folder);
+  edits = {};
+  if (!byFolder(selected)) selected = null;
+  const sel = $('size');
+  if (sel.options.length === 1) for (const s of sizes) sel.append(new Option(s.label, s.key));
+  renderGrid();
+  renderPanel();
+}
+
+$('size').addEventListener('change', renderGrid);
+$('hideSold').addEventListener('change', renderGrid);
+$('revert').addEventListener('click', () => { if (confirm('Discard all unsaved changes?')) load(); });
+$('save').addEventListener('click', async () => {
+  $('save').disabled = true;
+  const res = await fetch('/api/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order, edits }) });
+  const json = await res.json();
+  if (!res.ok) { toast(`Couldn't save: ${json.error}`); refreshButtons(); return; }
+  toast(`Saved · ${json.written} artwork file${json.written === 1 ? '' : 's'} updated`);
+  await load();
+});
+window.addEventListener('beforeunload', (e) => { if (isDirty()) e.preventDefault(); });
+
+function toast(text) {
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+load();
+</script>
+</body>
+</html>

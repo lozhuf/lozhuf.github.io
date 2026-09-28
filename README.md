@@ -89,6 +89,18 @@ The Music videos page (`/music`, reached with the Artwork / Music videos buttons
 { "id": "7x3FBcNH5Ys", "title": "My Way", "artist": "Anti Atlas" }
 ```
 
+## Arranging and editing artworks
+
+```sh
+npm run arrange
+```
+
+Opens a local page with every artwork in the order it appears on the site (it isn't part of the website).
+
+- **Reorder**: drag the cards, or select a piece and use First / Earlier / Later / Last or type a position. Choose a size under **Show** to reorder just the Large, Medium or Small page. Cards marked **lead** are the first two for sale on their size page, which are shown larger there.
+- **Edit**: click a piece to change its status (available / reserved / sold), price (empty = price on request), title, size, year, medium, materials, hi-res flag, Instagram and print links, and description. Edited pieces get a yellow dot.
+- **Save** writes everything to the `artwork.json` files and renumbers `order` as 10, 20, 30…; **Discard changes** reloads from the files. Commit and push afterwards to publish.
+
 ## Pricing table (private)
 
 ```sh
@@ -135,4 +147,5 @@ src/scripts/gallery.ts    overlay animation, carousel, browsing, form
 src/styles/global.css     all styling; colours and fonts at the top
 tools/crop/               the photo straightening tool (npm run crop)
 tools/prices/             the private pricing table (npm run prices)
+tools/arrange/            reorder and edit artworks (npm run arrange)
 ```
