@@ -10,6 +10,8 @@ export const site = {
   /** Linked from the envelope icon in the header, and for enquiries about sold pieces. */
   contactEmail: 'lauriehufford+hello@gmail.com',
   instagram: 'https://www.instagram.com/lozhuf/',
+  /** Etsy shop for prints, linked from the header and footer. */
+  shop: 'https://www.etsy.com/shop/LaurieHuffordArt',
 
   /**
    * Where "Request to buy" submissions are sent.

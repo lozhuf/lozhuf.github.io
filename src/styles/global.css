@@ -240,6 +240,11 @@ h3 {
   text-align: center;
 }
 
+.site-footer-shop a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+
 /* ---------------------------------------------------------------------------
    Gallery grid — "justified rows": every image keeps its real proportions,
    each row is the same height, and pieces read left to right in order.
