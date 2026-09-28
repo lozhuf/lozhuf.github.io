@@ -49,6 +49,8 @@ This creates `src/content/artworks/harbour-at-dusk/artwork.json`. Then:
 | `alt` | no | Description of the main image for screen readers. Defaults to the title. |
 | `order` | no | Position in the gallery, lowest first. Existing pieces are numbered 10, 20, 30… in the order of the original Google Doc, so use e.g. `5` to put a new piece first or `25` to slot it between the 2nd and 3rd. Pieces without `order` appear after all numbered ones, newest first. |
 | `instagram` | no | Link to the Instagram post; shown as "View on Instagram". |
+| `print` | no | Link to buy a print of the piece, e.g. its Etsy listing (`https://www.etsy.com/listing/1234567890`). Shows a "Buy a print" button, also on sold pieces. |
+| `hiResPhoto` | no | `true` if the main photo (`01`) is high resolution and taken in good, even light, so it could be used for prints. Defaults to `false`; not shown on the site. |
 
 The folder name becomes the page address: `/art/harbour-at-dusk`. If a field is misspelled or has the wrong type, `npm run dev` / `npm run build` stops and names the field.
 

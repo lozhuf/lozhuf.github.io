@@ -986,6 +986,42 @@ html:has(.video-overlay[open]) {
   margin-top: 28px;
 }
 
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.btn-outline:hover {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.btn-outline svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.detail-print {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin: 16px 0 0;
+}
+
+.detail-print span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .buy-toggle[aria-expanded='true'] {
   display: none;
 }

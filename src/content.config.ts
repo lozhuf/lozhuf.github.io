@@ -33,6 +33,13 @@ const artworks = defineCollection({
     alt: z.string().optional(),
     /** Link to the Instagram post for this piece. */
     instagram: z.url().optional(),
+    /** Link to buy a print of this piece, e.g. its Etsy listing. Shows a "Buy a print" button. */
+    print: z.url().optional(),
+    /**
+     * The main photo (01) is high resolution and taken in good, even light, so it
+     * could be used to make prints. Not shown on the site.
+     */
+    hiResPhoto: z.boolean().default(false),
     /** Lower numbers appear first. Artworks without it are sorted newest first. */
     order: z.number().optional(),
   }),
