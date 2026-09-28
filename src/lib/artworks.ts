@@ -51,6 +51,8 @@ export interface Artwork {
   aspect: number;
   /** The frame drawn around the main photo, when `frame` is set. */
   frame: FrameLayout | null;
+  /** Real height in cm of what the tile shows (the frame, when framed), if the size is known. */
+  realHeight: number | null;
   /** Tile-sized cover image for the grid. */
   cover: ArtworkImage;
   /** Tiny version of the cover, shown blurred while the real one loads. */
@@ -182,6 +184,12 @@ async function load(): Promise<Artwork[]> {
         Promise.all(media.map((m, i) => responsive(m.image, [120, 240], altFor(i), m.video))),
       ]);
 
+      // Height of the piece as hung: the frame's, or the artwork's (the dimension that
+      // matches the photo's orientation, the same way the frame works it out).
+      const dims = parseSize(data.dimensions);
+      const landscape = first.width >= first.height;
+      const realHeight = frame?.height ?? (dims ? (dims[0] >= dims[1] === landscape ? dims[1] : dims[0]) : null);
+
       // A framed piece opens on the framed view, followed by the photo on its own.
       if (frame) {
         images.unshift({ ...images[0], alt: `${coverAlt}, shown framed`, framed: true });
@@ -196,6 +204,7 @@ async function load(): Promise<Artwork[]> {
         size: sizeOf(data.dimensions),
         aspect: frame?.aspect ?? first.width / first.height,
         frame,
+        realHeight,
         cover,
         placeholder: placeholder.src,
         images,

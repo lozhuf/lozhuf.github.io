@@ -20,6 +20,7 @@ const sizes = `(max-width: 640px) 100vw, ${Math.round(aspect * (Astro.props.lead
   class="tile"
   data-id={id}
   style={`--ar: ${aspect.toFixed(4)}`}
+  data-real-h={artwork.realHeight ?? undefined}
 >
   <a class="tile-link" href={url(`art/${id}`)} data-open={id}>
     <div class="tile-frame" style={frame ? undefined : `background-image: url(${placeholder})`}>

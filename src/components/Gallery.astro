@@ -28,7 +28,8 @@ const sold = shown.filter((a) => a.data.status === 'sold');
 // The first pieces (in `order`) are shown larger in a lead row, when there's
 // enough on the page for that to make sense.
 const LEAD = 2;
-const lead = forSale.length > LEAD + 2 ? forSale.slice(0, LEAD) : [];
+// Not on the All page, where pieces are shown at their relative sizes instead.
+const lead = category !== 'all' && forSale.length > LEAD + 2 ? forSale.slice(0, LEAD) : [];
 const rest = forSale.slice(lead.length);
 ---
 

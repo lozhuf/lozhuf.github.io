@@ -32,6 +32,24 @@
   --row-h: 380px;
 }
 
+/* The All page shows pieces at relative sizes, from the smallest real height (--rel-min)
+   to the largest (--rel-max), packed together (see src/scripts/rows.ts). */
+.gallery-all {
+  --rel-min: 110px;
+  --rel-max: 460px;
+  --gap-min: 36px;
+  --pack-gap-y: 36px;
+}
+
+.grid-packed {
+  position: relative;
+  display: block;
+}
+
+.grid-packed > .tile {
+  position: absolute;
+}
+
 /* Taller rows on narrower screens, where fewer pieces fit side by side anyway. */
 @media (max-width: 849px) {
   :root {
@@ -44,6 +62,11 @@
 
   .gallery-large {
     --row-h: 440px;
+  }
+
+  .gallery-all {
+    --rel-min: 90px;
+    --rel-max: 380px;
   }
 }
 
