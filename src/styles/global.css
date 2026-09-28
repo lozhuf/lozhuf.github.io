@@ -15,20 +15,35 @@
 
   --page-pad: clamp(16px, 4vw, 56px);
   --gap: clamp(20px, 3vw, 48px);
-  --row-h: 240px;
+  --row-h: 290px;
+  /* Space between pieces in a row: it stretches to fill the row, within these limits. */
+  --gap-min: 40px;
+  --gap-max: 140px;
   --radius: 0;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-@media (min-width: 900px) {
-  :root {
-    --row-h: 280px;
-  }
+/* Bigger pieces get taller rows on their own pages. */
+.gallery-medium {
+  --row-h: 330px;
 }
 
-@media (min-width: 1600px) {
+.gallery-large {
+  --row-h: 380px;
+}
+
+/* Taller rows on narrower screens, where fewer pieces fit side by side anyway. */
+@media (max-width: 849px) {
   :root {
-    --row-h: 340px;
+    --row-h: 350px;
+  }
+
+  .gallery-medium {
+    --row-h: 390px;
+  }
+
+  .gallery-large {
+    --row-h: 440px;
   }
 }
 

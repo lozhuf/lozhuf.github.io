@@ -34,7 +34,7 @@ const rest = forSale.slice(lead.length);
 
 <SiteHeader current={category} counts={categoryCounts(artworks)} />
 
-<main class="gallery">
+<main class={`gallery gallery-${category}`}>
   <section class="gallery-section" aria-label="Available">
     {
       lead.length > 0 && (
@@ -97,4 +97,5 @@ const rest = forSale.slice(lead.length);
 
 <script>
   import '../scripts/gallery';
+  import '../scripts/rows';
 </script>
