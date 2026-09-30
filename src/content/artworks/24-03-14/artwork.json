@@ -7,5 +7,9 @@
   "price": 800,
   "status": "available",
   "instagram": "https://www.instagram.com/p/C4gZIwErYnd/",
-  "order": 180
+  "order": 190,
+  "frame": {
+    "size": "20x25.1",
+    "style": "black"
+  }
 }

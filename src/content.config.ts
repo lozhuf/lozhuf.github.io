@@ -28,7 +28,7 @@ const artworks = defineCollection({
     /** Leave out to show "Price on request". */
     price: z.number().positive().optional(),
     currency: z.string().length(3).optional(),
-    status: z.enum(['available', 'reserved', 'sold']).default('available'),
+    status: z.enum(['available', 'reserved', 'sold', 'hidden']).default('available'),
     description: z.string().optional(),
     /** Alt text for the main image. Defaults to the title. */
     alt: z.string().optional(),

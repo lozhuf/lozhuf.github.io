@@ -24,7 +24,7 @@ const ARTWORKS = resolve(process.env.ARTWORKS_DIR ?? join(root, 'src/content/art
 const CONFIG = join(root, 'src/site.config.ts');
 const PORT = Number(process.env.PORT ?? 4420);
 const IMAGE = /\.(jpe?g|png|webp)$/i;
-const STATUSES = ['available', 'reserved', 'sold'];
+const STATUSES = ['available', 'reserved', 'sold', 'hidden'];
 // Shared with the website, so the preview matches it exactly.
 const SHARED = { '/frame.js': 'src/lib/frame.js', '/frame.css': 'src/styles/frame.css' };
 

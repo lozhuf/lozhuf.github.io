@@ -36,11 +36,13 @@
   .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
   .tag { padding: 0 7px; border-radius: 999px; font-size: 11px; background: #f0ece4; }
   .tag.sold { background: #f6e3e1; color: #b3261e; }
+  .tag.hidden { background: #e4e4e4; color: #555; }
   .tag.reserved { background: #fdf0d5; color: #8a5a00; }
   .tag.lead { background: var(--ink); color: #fff; }
   .tag.hires { background: #e3f1e8; color: #1d7a46; }
   .tag.loc { background: #e6eef8; color: #2a4f7a; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card.sold img { opacity: .55; }
+  .card.hidden img { opacity: .3; }
 
   aside { border-left: 1px solid var(--line); background: var(--panel); overflow-y: auto; padding: 20px; }
   aside .empty { color: var(--muted); }
@@ -139,7 +141,7 @@ function renderGrid() {
     const status = value(f, 'status');
     const price = value(f, 'price');
     const li = document.createElement('li');
-    li.className = 'card' + (f === selected ? ' selected' : '') + (edits[f] ? ' edited' : '') + (status === 'sold' ? ' sold' : '');
+    li.className = 'card' + (f === selected ? ' selected' : '') + (edits[f] ? ' edited' : '') + (status === 'sold' ? ' sold' : '') + (status === 'hidden' ? ' hidden' : '');
     li.draggable = true;
     li.dataset.folder = f;
     li.innerHTML = `
@@ -236,7 +238,7 @@ function renderPanel() {
     </div>
     <div class="row">
       <label class="field"><span>Status</span>
-        <select data-key="status">${['available', 'reserved', 'sold'].map((s) => `<option ${value(f, 'status') === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+        <select data-key="status">${['available', 'reserved', 'sold', 'hidden'].map((s) => `<option ${value(f, 'status') === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
       </label>
       <label class="field"><span>Price (kr.) — empty = on request</span>
         <input type="number" min="1" step="50" data-key="price" value="${value(f, 'price') ?? ''}">

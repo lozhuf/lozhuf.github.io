@@ -45,7 +45,7 @@ This creates `src/content/artworks/harbour-at-dusk/artwork.json`. Then:
 | `materials`, `dimensions`, `description` | no | Free text. |
 | `price` | no | A number, no currency symbol. Leave out to show "Price on request". |
 | `currency` | no | e.g. `"EUR"`. Defaults to the currency in `src/site.config.ts`. |
-| `status` | no | `available` (default), `reserved` or `sold`. Sold pieces stay visible, with no buy button. |
+| `status` | no | `available` (default), `reserved`, `sold` or `hidden`. Sold pieces stay visible, with no buy button. Hidden pieces are left off the site (but still appear in the arrange and crop tools). |
 | `alt` | no | Description of the main image for screen readers. Defaults to the title. |
 | `order` | no | Position in the gallery, lowest first. Existing pieces are numbered 10, 20, 30… in the order of the original Google Doc, so use e.g. `5` to put a new piece first or `25` to slot it between the 2nd and 3rd. Pieces without `order` appear after all numbered ones, newest first. |
 | `instagram` | no | Link to the Instagram post; shown as "View on Instagram". |

@@ -8,5 +8,9 @@
   "status": "available",
   "instagram": "https://www.instagram.com/p/C3KUQzZIHpo/",
   "hiResPhoto": true,
-  "order": 200
+  "order": 210,
+  "frame": {
+    "size": "28x28",
+    "style": "white"
+  }
 }

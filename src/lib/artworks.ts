@@ -157,7 +157,8 @@ export function getArtworks(): Promise<Artwork[]> {
 }
 
 async function load(): Promise<Artwork[]> {
-  const entries = (await getCollection('artworks')).sort(sortArtworks);
+  // Hidden pieces are left out of the site entirely; the arrange and crop tools read the files directly.
+  const entries = (await getCollection('artworks', ({ data }) => data.status !== 'hidden')).sort(sortArtworks);
   return Promise.all(
     entries.map(async (entry) => {
       const { data } = entry;

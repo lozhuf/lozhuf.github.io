@@ -7,5 +7,10 @@
   "price": 800,
   "status": "available",
   "instagram": "https://www.instagram.com/p/CzbUlyhIiV3/",
-  "order": 210
+  "order": 220,
+  "frame": {
+    "size": "28x28",
+    "style": "black"
+  },
+  "hiResPhoto": true
 }
