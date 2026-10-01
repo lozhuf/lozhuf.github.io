@@ -47,6 +47,7 @@ This creates `src/content/artworks/harbour-at-dusk/artwork.json`. Then:
 | `currency` | no | e.g. `"EUR"`. Defaults to the currency in `src/site.config.ts`. |
 | `status` | no | `available` (default), `reserved`, `sold` or `hidden`. Sold pieces stay visible, with no buy button. Hidden pieces are left off the site (but still appear in the arrange and crop tools). |
 | `alt` | no | Description of the main image for screen readers. Defaults to the title. |
+| `hoursSpent` | no | Hours spent making the piece, for working out return on effort. Private: never shown on the site (but visible in the public GitHub repo). Editable in the arrange tool. |
 | `order` | no | Position in the gallery, lowest first. Existing pieces are numbered 10, 20, 30… in the order of the original Google Doc, so use e.g. `5` to put a new piece first or `25` to slot it between the 2nd and 3rd. Pieces without `order` appear after all numbered ones, newest first. |
 | `instagram` | no | Link to the Instagram post; shown as "View on Instagram". |
 | `print` | no | Link to buy a print of the piece, e.g. its Etsy listing (`https://www.etsy.com/listing/1234567890`). Shows a "Buy a print" button, also on sold pieces. |
@@ -98,7 +99,7 @@ npm run arrange
 Opens a local page with every artwork in the order it appears on the site (it isn't part of the website).
 
 - **Reorder**: drag the cards, or select a piece and use First / Earlier / Later / Last or type a position. Choose a size under **Show** to reorder just the Large, Medium or Small page. Cards marked **lead** are the first two for sale on their size page, which are shown larger there.
-- **Edit**: click a piece to change its status (available / reserved / sold), price (empty = price on request), title, size, year, medium, materials, hi-res flag, Instagram and print links, and description. Edited pieces get a yellow dot.
+- **Edit**: click a piece to change its status (available / reserved / sold), price (empty = price on request), hours spent, title, size, year, medium, materials, hi-res flag, Instagram and print links, and description. Edited pieces get a yellow dot.
 - **Save** writes everything to the `artwork.json` files and renumbers `order` as 10, 20, 30…; **Discard changes** reloads from the files. Commit and push afterwards to publish.
 
 ## Pricing table (private)

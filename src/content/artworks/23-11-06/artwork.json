@@ -12,5 +12,6 @@
     "size": "28x28",
     "style": "oak"
   },
-  "hiResPhoto": true
+  "hiResPhoto": true,
+  "hoursSpent": 1.5
 }

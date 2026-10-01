@@ -6,5 +6,6 @@
   "year": 2023,
   "price": 400,
   "status": "hidden",
-  "order": 490
+  "order": 490,
+  "hoursSpent": 1.5
 }

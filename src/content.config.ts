@@ -61,6 +61,11 @@ const artworks = defineCollection({
      * public GitHub repository).
      */
     location: z.string().optional(),
+    /**
+     * Hours spent making the piece, for working out return on effort. For your own
+     * records only: never shown on the site (but visible in the public GitHub repository).
+     */
+    hoursSpent: z.number().positive().optional(),
     /** Lower numbers appear first. Artworks without it are sorted newest first. */
     order: z.number().optional(),
   }),

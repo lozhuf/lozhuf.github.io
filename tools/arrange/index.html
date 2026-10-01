@@ -209,7 +209,7 @@ function setField(f, key, v) {
   const orig = byFolder(f).data[key];
   const same =
     key === 'frame' ? frameKey(orig) === frameKey(v) :
-    (orig ?? '') === (v ?? '') || (key === 'hiResPhoto' && !!orig === !!v) || (key === 'price' && String(orig ?? '') === String(v ?? ''));
+    (orig ?? '') === (v ?? '') || (key === 'hiResPhoto' && !!orig === !!v) || ((key === 'price' || key === 'hoursSpent') && String(orig ?? '') === String(v ?? ''));
   edits[f] ??= {};
   if (same) delete edits[f][key];
   else edits[f][key] = v;
@@ -272,6 +272,7 @@ function renderPanel() {
     <label class="field"><span>Instagram link</span><input type="url" data-key="instagram" value="${esc(value(f, 'instagram'))}"></label>
     <label class="field"><span>Print link (e.g. Etsy listing)</span><input type="url" data-key="print" value="${esc(value(f, 'print'))}"></label>
     <label class="field"><span>Location — who has it, or where it is (private, not shown on the site)</span><input type="text" data-key="location" value="${esc(value(f, 'location'))}" placeholder="e.g. studio, sold to…, at an exhibition"></label>
+    <label class="field"><span>Hours spent (private, not shown on the site)</span><input type="number" min="0" step="0.5" data-key="hoursSpent" value="${value(f, 'hoursSpent') ?? ''}"></label>
     <label class="field"><span>Description</span><textarea rows="4" data-key="description">${esc(value(f, 'description'))}</textarea></label>`;
 
   panel.querySelectorAll('[data-key]').forEach((el) => {

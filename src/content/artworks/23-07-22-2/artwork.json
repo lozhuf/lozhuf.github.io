@@ -6,5 +6,6 @@
   "year": 2023,
   "price": 2400,
   "status": "available",
-  "order": 300
+  "order": 300,
+  "hoursSpent": 2
 }

@@ -95,6 +95,11 @@ function clean(folder, edits, mediums) {
         else if (Number.isInteger(Number(value)) && Number(value) > 0) out.price = Number(value);
         else fail('price must be a whole number (or empty for “price on request”)');
         break;
+      case 'hoursSpent':
+        if (value === '' || value === null) out.hoursSpent = undefined;
+        else if (Number.isFinite(Number(value)) && Number(value) > 0) out.hoursSpent = Number(value);
+        else fail('hours spent must be a positive number (or empty)');
+        break;
       case 'year':
         if (!(Number.isInteger(Number(value)) && Number(value) >= 1900 && Number(value) <= 2100)) fail('year looks wrong');
         out.year = Number(value);

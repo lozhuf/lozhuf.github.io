@@ -12,5 +12,6 @@
     "size": "28x28",
     "style": "black"
   },
-  "hiResPhoto": true
+  "hiResPhoto": true,
+  "hoursSpent": 3
 }
