@@ -7,5 +7,6 @@
   "price": 800,
   "status": "available",
   "order": 340,
-  "hoursSpent": 1.5
+  "hoursSpent": 1.5,
+  "location": "The Spot"
 }
