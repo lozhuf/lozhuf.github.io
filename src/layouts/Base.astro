@@ -38,6 +38,20 @@ const ogImage = image ? new URL(image, Astro.site).href : undefined;
     {ogImage && <meta property="og:image" content={ogImage} />}
     <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
 
+    {site.googleAnalyticsId && (
+      <>
+        <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${site.googleAnalyticsId}`} />
+        <script is:inline define:vars={{ gaId: site.googleAnalyticsId }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag() {
+            dataLayer.push(arguments);
+          }
+          gtag('js', new Date());
+          gtag('config', gaId);
+        </script>
+      </>
+    )}
+
     <script is:inline>
       document.documentElement.classList.add('js');
     </script>

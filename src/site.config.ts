@@ -21,6 +21,9 @@ export const site = {
    */
   formEndpoint: 'https://formspree.io/f/xrpbllkg',
 
+  /** Google Analytics measurement ID. Leave empty to disable tracking. */
+  googleAnalyticsId: 'G-ZXZFJNP0EK',
+
   /** Currency used when an artwork doesn't set its own. */
   defaultCurrency: 'DKK',
   /** Controls number formatting, e.g. 'da-DK' shows "3.000 kr." */
