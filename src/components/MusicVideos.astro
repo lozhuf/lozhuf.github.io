@@ -1,12 +1,20 @@
 ---
-import videos from '../content/music-videos.json';
+import { musicVideos as videos, type MusicVideo } from '../lib/music';
+import { url } from '../lib/url';
 import SiteHeader from './SiteHeader.astro';
 import SiteFooter from './SiteFooter.astro';
+
+interface Props {
+  /** A video whose overlay should already be open (for /music/<slug> pages). */
+  initial?: MusicVideo;
+}
+
+const { initial } = Astro.props;
 ---
 
 <SiteHeader section="music" />
 
-<main class="music">
+<main class="music" data-initial={initial?.slug} data-index={url('music')}>
   <ul class="videos">
     {
       videos.map((v, i) => (
@@ -15,8 +23,9 @@ import SiteFooter from './SiteFooter.astro';
               Without JavaScript it's a plain link to the video on YouTube. */}
           <a
             class="video-frame"
-            href={`https://www.youtube.com/watch?v=${v.id}`}
+            href={url(`music/${v.slug}`)}
             data-video={v.id}
+            data-slug={v.slug}
             data-title={v.title}
             data-artist={v.artist}
             aria-label={`Play ${v.title} by ${v.artist}`}
@@ -63,7 +72,10 @@ import SiteFooter from './SiteFooter.astro';
   const titleEl = overlay.querySelector<HTMLElement>('.video-overlay-title')!;
   const artistEl = overlay.querySelector<HTMLElement>('.video-overlay-artist')!;
 
-  function open(link: HTMLAnchorElement) {
+  const main = document.querySelector<HTMLElement>('main.music')!;
+  const indexUrl = main.dataset.index!;
+
+  function show(link: HTMLAnchorElement) {
     const { video, title = 'Music video', artist = '' } = link.dataset;
     const iframe = document.createElement('iframe');
     iframe.src = `https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0&playsinline=1`;
@@ -74,7 +86,21 @@ import SiteFooter from './SiteFooter.astro';
     titleEl.textContent = title;
     artistEl.textContent = artist;
     overlay.setAttribute('aria-label', iframe.title);
-    overlay.showModal();
+    if (!overlay.open) overlay.showModal();
+  }
+
+  function linkFor(slug: string | undefined) {
+    return slug ? document.querySelector<HTMLAnchorElement>(`a[data-slug="${CSS.escape(slug)}"]`) : null;
+  }
+
+  function slugFromLocation() {
+    return decodeURIComponent(location.pathname).replace(/\/+$/, '').split('/').pop();
+  }
+
+  // Each video has its own URL (/music/<slug>) so it can be shared.
+  function open(link: HTMLAnchorElement) {
+    history.pushState({ video: link.dataset.slug }, '', link.href);
+    show(link);
   }
 
   document.addEventListener('click', (event) => {
@@ -84,11 +110,39 @@ import SiteFooter from './SiteFooter.astro';
     open(link);
   });
 
-  overlay.querySelector('.video-overlay-close')!.addEventListener('click', () => overlay.close());
+  function close() {
+    // If we pushed the video's URL, going back closes the overlay (see popstate);
+    // if the page was opened directly on it, just swap the URL back to /music.
+    if (history.state?.video) history.back();
+    else {
+      overlay.close();
+      history.replaceState(null, '', indexUrl);
+    }
+  }
+
+  overlay.querySelector('.video-overlay-close')!.addEventListener('click', close);
   // Clicking the dark area around the player closes it too.
   overlay.addEventListener('click', (event) => {
-    if (event.target === overlay || event.target === overlay.querySelector('.video-overlay-body')) overlay.close();
+    if (event.target === overlay || event.target === overlay.querySelector('.video-overlay-body')) close();
   });
-  // Removing the player stops the video (Esc closes the dialog natively).
+  // Esc closes the dialog natively; keep the URL in step.
+  overlay.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    close();
+  });
+  // Removing the player stops the video.
   overlay.addEventListener('close', () => player.replaceChildren());
+
+  window.addEventListener('popstate', () => {
+    const link = linkFor(slugFromLocation());
+    if (link) show(link);
+    else overlay.close();
+  });
+
+  // Landing directly on /music/<slug>: open that video straight away.
+  const initial = linkFor(main.dataset.initial);
+  if (initial) {
+    history.replaceState({ video: null }, '', location.href);
+    show(initial);
+  }
 </script>

@@ -1,0 +1,21 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import MusicVideos from '../../components/MusicVideos.astro';
+import { musicVideos } from '../../lib/music';
+
+// One page per video, e.g. /music/wise-old-owl. It shows the music page with that
+// video's overlay already open, so shared links land on the video.
+export const getStaticPaths = (() =>
+  musicVideos.map((video) => ({ params: { slug: video.slug }, props: { video } }))) satisfies GetStaticPaths;
+
+const { video } = Astro.props;
+---
+
+<Base
+  title={`${video.title} — ${video.artist}`}
+  description={`${video.title}, a music video by ${video.artist}.`}
+  image={`https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`}
+>
+  <MusicVideos initial={video} />
+</Base>
